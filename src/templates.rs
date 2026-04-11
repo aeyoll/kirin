@@ -23,6 +23,10 @@ impl TemplateEngine {
             env!("CARGO_MANIFEST_DIR"),
             "/templates/file_unavailable.html"
         ));
+        const DOWNLOAD_FORBIDDEN: &str = include_str!(concat!(
+            env!("CARGO_MANIFEST_DIR"),
+            "/templates/download_forbidden.html"
+        ));
         env.add_template("base.html", BASE)?;
         env.add_template("index.html", INDEX)?;
         env.add_template("download.html", DOWNLOAD)?;
@@ -31,6 +35,7 @@ impl TemplateEngine {
         env.add_template("admin_login.html", ADMIN_LOGIN)?;
         env.add_template("upload_result.html", UPLOAD_RESULT)?;
         env.add_template("file_unavailable.html", FILE_UNAVAILABLE)?;
+        env.add_template("download_forbidden.html", DOWNLOAD_FORBIDDEN)?;
         Ok(Self {
             inner: Arc::new(env),
         })

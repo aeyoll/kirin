@@ -33,6 +33,50 @@ enum FileUnavailableKind {
     Expired,
 }
 
+#[derive(Clone, Copy)]
+enum DownloadForbiddenReason {
+    WrongPassword,
+    DataRequiresPassword,
+}
+
+async fn render_download_forbidden(
+    state: &AppState,
+    link_id: &str,
+    reason: DownloadForbiddenReason,
+) -> Result<Response, AppError> {
+    let (headline, description) = match reason {
+        DownloadForbiddenReason::WrongPassword => (
+            "Wrong password",
+            "The password you entered is not correct. Ask the person who shared this link for the right password, then try again.",
+        ),
+        DownloadForbiddenReason::DataRequiresPassword => (
+            "Password required",
+            "This file is protected. Open the download page and enter the password there; the file cannot be fetched without it.",
+        ),
+    };
+    let site_title = state.cfg.ui.title.clone();
+    let organisation = state.cfg.ui.organisation.clone();
+    let page_title = format!("403 Forbidden - {site_title}");
+    let ctx = minijinja::context! {
+        page_title => page_title,
+        site_title => site_title,
+        organisation => organisation,
+        status_code => "403 Forbidden",
+        headline => headline,
+        description => description,
+        link_id => link_id,
+        retry_action_label => "Try again",
+        home_action_label => "Back to home",
+    };
+    let html = state
+        .minijinja()
+        .get_template("download_forbidden.html")
+        .map_err(|_| AppError::Internal)?
+        .render(ctx)
+        .map_err(|_| AppError::Internal)?;
+    Ok((StatusCode::FORBIDDEN, Html(html)).into_response())
+}
+
 async fn render_file_unavailable(
     state: &AppState,
     kind: FileUnavailableKind,
@@ -126,7 +170,12 @@ pub async fn download_get(
 
     if want_data {
         if meta.download_password_hash.is_some() {
-            return Err(AppError::Forbidden);
+            return render_download_forbidden(
+                &state,
+                &link_id,
+                DownloadForbiddenReason::DataRequiresPassword,
+            )
+            .await;
         }
         return stream_blob_or_unavailable(
             &state,
@@ -217,7 +266,12 @@ pub async fn download_post(
         if let Some(ref h) = meta.download_password_hash {
             if !verify_download_password(h, &key) {
                 tokio::time::sleep(std::time::Duration::from_secs(2)).await;
-                return Err(AppError::Forbidden);
+                return render_download_forbidden(
+                    &state,
+                    &link_id,
+                    DownloadForbiddenReason::WrongPassword,
+                )
+                .await;
             }
         }
         return stream_blob_or_unavailable(

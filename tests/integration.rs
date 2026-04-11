@@ -150,3 +150,84 @@ async fn upload_download_delete_roundtrip() {
         &gone_html[..gone_html.len().min(200)]
     );
 }
+
+#[tokio::test]
+async fn download_wrong_password_returns_403_html() {
+    let tmp = TempDir::new().unwrap();
+    let data = tmp.path().join("data");
+    std::fs::create_dir_all(&data).unwrap();
+
+    let listener = TcpListener::bind("127.0.0.1:0").await.unwrap();
+    let addr = listener.local_addr().unwrap();
+    let port = addr.port();
+    let base = format!("http://127.0.0.1:{port}/");
+
+    let cfg_path = tmp.path().join("config.toml");
+    std::fs::write(&cfg_path, config_toml(&data, &base)).unwrap();
+    let cfg = Arc::new(AppConfig::load_path(&cfg_path).unwrap());
+    let app = create_app(cfg).unwrap();
+
+    tokio::spawn(async move {
+        axum::serve(
+            listener,
+            app.into_make_service_with_connect_info::<SocketAddr>(),
+        )
+        .await
+        .expect("server");
+    });
+
+    tokio::time::sleep(Duration::from_millis(80)).await;
+
+    let client = reqwest::Client::builder()
+        .timeout(Duration::from_secs(30))
+        .build()
+        .unwrap();
+
+    let upload_body = b"secret-payload";
+    let file_part = reqwest::multipart::Part::bytes(upload_body.to_vec())
+        .file_name("locked.txt")
+        .mime_str("text/plain")
+        .unwrap();
+    let form = reqwest::multipart::Form::new()
+        .text("time", "hour")
+        .text("key", "correct-horse")
+        .part("file", file_part);
+
+    let res = client
+        .post(format!("{base}upload"))
+        .multipart(form)
+        .send()
+        .await
+        .expect("upload");
+    assert!(res.status().is_success(), "upload {}", res.status());
+    let html = res.text().await.expect("upload body");
+
+    let re = Regex::new(r"f/([A-Za-z0-9_-]+)\?d=1").unwrap();
+    let link_id = re
+        .captures(&html)
+        .and_then(|c| c.get(1).map(|m| m.as_str().to_string()))
+        .expect("link id in upload result");
+
+    let bad_form = reqwest::multipart::Form::new().text("key", "wrong");
+    let denied = client
+        .post(format!("{base}f/{link_id}?d=1"))
+        .multipart(bad_form)
+        .send()
+        .await
+        .expect("download with bad password");
+    assert_eq!(
+        denied.status(),
+        reqwest::StatusCode::FORBIDDEN,
+        "wrong password should be 403"
+    );
+    let body = denied.text().await.expect("403 body");
+    assert!(
+        body.contains("Wrong password"),
+        "expected HTML forbidden page, got: {}",
+        &body[..body.len().min(300)]
+    );
+    assert!(
+        body.contains("Try again") && body.contains(&format!("/f/{link_id}")),
+        "expected retry link to download page"
+    );
+}
