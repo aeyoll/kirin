@@ -12,6 +12,8 @@ use tokio::sync::Mutex;
 
 type HmacSha256 = Hmac<Sha256>;
 
+const UPLOAD_COMPLETE_MAC_LABEL: &[u8] = b"kirin:upload_complete:v1\0";
+
 #[derive(Clone)]
 pub struct AppState {
     pub cfg: Arc<AppConfig>,
@@ -52,6 +54,37 @@ impl AppState {
         mac.update(payload.as_bytes());
         let sig = hex::encode(mac.finalize().into_bytes());
         format!("{payload}:{sig}")
+    }
+
+    /// HMAC for `GET /upload/complete/{link_id}?v=…` so the delete URL is not inferable from `link_id` alone.
+    pub fn sign_upload_complete_view(&self, link_id: &str, delete_code: &str) -> String {
+        let mut mac = HmacSha256::new_from_slice(&self.signing_key)
+            .expect("HMAC key length");
+        mac.update(UPLOAD_COMPLETE_MAC_LABEL);
+        mac.update(link_id.as_bytes());
+        mac.update(b"\0");
+        mac.update(delete_code.as_bytes());
+        hex::encode(mac.finalize().into_bytes())
+    }
+
+    pub fn verify_upload_complete_view(
+        &self,
+        link_id: &str,
+        delete_code: &str,
+        token_hex: &str,
+    ) -> bool {
+        let Ok(token_bytes) = hex::decode(token_hex) else {
+            return false;
+        };
+        let mut mac = match HmacSha256::new_from_slice(&self.signing_key) {
+            Ok(m) => m,
+            Err(_) => return false,
+        };
+        mac.update(UPLOAD_COMPLETE_MAC_LABEL);
+        mac.update(link_id.as_bytes());
+        mac.update(b"\0");
+        mac.update(delete_code.as_bytes());
+        mac.verify_slice(&token_bytes).is_ok()
     }
 
     pub fn verify_admin_session(&self, token: &str) -> bool {

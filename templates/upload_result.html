@@ -18,11 +18,13 @@
       <a href="{{ direct_download|safe }}" class="mt-1 inline-block font-medium text-indigo-600 underline-offset-2 hover:underline dark:text-indigo-400">{{ tr["upload_result.direct_link"] }}</a>
       <p class="mt-2 break-all font-mono text-xs text-slate-600 dark:text-slate-400">{{ direct_download|safe }}</p>
     </li>
+    {% if show_delete_link %}
     <li class="rounded-lg border border-slate-200 bg-slate-50/80 p-4 dark:border-slate-700 dark:bg-slate-800/40">
       <div class="font-medium text-slate-900 dark:text-white">{{ tr["upload_result.delete_link"] }}</div>
       <a href="{{ delete_link|safe }}" class="mt-1 inline-block font-medium text-indigo-600 underline-offset-2 hover:underline dark:text-indigo-400">{{ tr["upload_result.remove_file"] }}</a>
       <p class="mt-2 break-all font-mono text-xs text-slate-600 dark:text-slate-400">{{ delete_link|safe }}</p>
     </li>
+    {% endif %}
   </ul>
   <p class="mt-8">
     <a href="/" class="inline-flex items-center justify-center rounded-lg border border-slate-300 bg-white px-4 py-2 text-sm font-medium text-slate-700 shadow-sm transition hover:bg-slate-50 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2 dark:border-slate-600 dark:bg-slate-800 dark:text-slate-200 dark:hover:bg-slate-700 dark:focus:ring-offset-slate-950">{{ tr["upload_result.upload_another"] }}</a>

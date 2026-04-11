@@ -31,7 +31,7 @@ pub struct DownloadQuery {
 }
 
 #[derive(Clone, Copy)]
-enum FileUnavailableKind {
+pub(crate) enum FileUnavailableKind {
     Missing,
     Expired,
 }
@@ -87,7 +87,7 @@ async fn render_download_forbidden(
     Ok((StatusCode::FORBIDDEN, Html(html)).into_response())
 }
 
-async fn render_file_unavailable(
+pub(crate) async fn render_file_unavailable(
     state: &AppState,
     kind: FileUnavailableKind,
     loc: Locale,

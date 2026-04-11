@@ -2,12 +2,13 @@ use crate::error::AppError;
 use crate::expiry::expires_at_unix;
 use crate::models::FileMeta;
 use crate::password::hash_download_password;
-use crate::routes::common::{challenge_upload, gen_delete_code, gen_link_id};
+use crate::routes::common::{challenge_upload, gen_delete_code, gen_link_id, valid_link_id};
+use crate::routes::download::{render_file_unavailable, FileUnavailableKind};
 use crate::routes::locale::{request_locale, tr_value};
 use crate::state::AppState;
-use axum::extract::{ConnectInfo, Multipart, State};
+use axum::extract::{ConnectInfo, Multipart, Path, Query, State};
 use axum::http::HeaderMap;
-use axum::response::{Html, IntoResponse, Response};
+use axum::response::{Html, IntoResponse, Redirect, Response};
 use axum_extra::extract::cookie::CookieJar;
 use blake3::Hasher;
 use std::collections::HashMap;
@@ -16,24 +17,62 @@ use std::path::PathBuf;
 use tokio::fs::File;
 use tokio::io::AsyncWriteExt;
 
+#[derive(serde::Deserialize, Default)]
+pub struct UploadCompleteQuery {
+    #[serde(default)]
+    pub v: Option<String>,
+}
+
 pub async fn upload_multipart(
     State(state): State<AppState>,
     ConnectInfo(addr): ConnectInfo<SocketAddr>,
-    headers: HeaderMap,
-    jar: CookieJar,
     multipart: Multipart,
 ) -> Result<Response, AppError> {
     let ip = addr.ip().to_string();
     let res = process_multipart(&state, multipart, &ip).await?;
+    let v = state.sign_upload_complete_view(&res.link_id, &res.delete_code);
+    let target = format!("/upload/complete/{}?v={}", res.link_id, v);
+    Ok(Redirect::to(&target).into_response())
+}
+
+pub async fn upload_complete_get(
+    State(state): State<AppState>,
+    Path(link_id): Path<String>,
+    Query(q): Query<UploadCompleteQuery>,
+    headers: HeaderMap,
+    jar: CookieJar,
+) -> Result<Response, AppError> {
     let cfg = &state.cfg;
     let loc = request_locale(cfg, &headers, &jar);
+    if !valid_link_id(&link_id) {
+        return render_file_unavailable(&state, FileUnavailableKind::Missing, loc).await;
+    }
+    let meta = match state.storage.read_meta(&link_id).await? {
+        Some(m) => m,
+        None => return render_file_unavailable(&state, FileUnavailableKind::Missing, loc).await,
+    };
+    let now = chrono::Utc::now().timestamp();
+    if meta.is_expired(now) {
+        let _ = state.storage.delete_link(&link_id).await;
+        return render_file_unavailable(&state, FileUnavailableKind::Expired, loc).await;
+    }
     let tr = tr_value(&state.i18n, loc);
     let base = cfg.public_base_url_normalized();
+    let show_delete = q
+        .v
+        .as_deref()
+        .is_some_and(|t| state.verify_upload_complete_view(&link_id, &meta.delete_code, t));
+    let delete_link = if show_delete {
+        format!("{}f/{}?d={}", base, meta.link_id, meta.delete_code)
+    } else {
+        String::new()
+    };
     let ctx = minijinja::context! {
-        original_name => res.original_name,
-        download_page => format!("{}f/{}", base, res.link_id),
-        direct_download => format!("{}f/{}?d=1", base, res.link_id),
-        delete_link => format!("{}f/{}?d={}", base, res.link_id, res.delete_code),
+        original_name => meta.original_name,
+        download_page => format!("{}f/{}", base, meta.link_id),
+        direct_download => format!("{}f/{}?d=1", base, meta.link_id),
+        show_delete_link => show_delete,
+        delete_link => delete_link,
         locale => loc.as_str(),
         tr => tr,
     };
@@ -49,7 +88,6 @@ pub async fn upload_multipart(
 pub struct UploadResult {
     pub link_id: String,
     pub delete_code: String,
-    pub original_name: String,
 }
 
 pub async fn process_multipart(
@@ -204,9 +242,5 @@ pub async fn process_multipart(
         .finalize_upload(&link_id, &tmp_path, &meta)
         .await?;
 
-    Ok(UploadResult {
-        link_id,
-        delete_code,
-        original_name,
-    })
+    Ok(UploadResult { link_id, delete_code })
 }

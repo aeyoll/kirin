@@ -153,6 +153,72 @@ async fn upload_download_delete_roundtrip() {
 }
 
 #[tokio::test]
+async fn upload_complete_get_without_token_hides_delete_link() {
+    let tmp = TempDir::new().unwrap();
+    let data = tmp.path().join("data");
+    std::fs::create_dir_all(&data).unwrap();
+
+    let listener = TcpListener::bind("127.0.0.1:0").await.unwrap();
+    let addr = listener.local_addr().unwrap();
+    let port = addr.port();
+    let base = format!("http://127.0.0.1:{port}/");
+
+    let cfg_path = tmp.path().join("config.toml");
+    std::fs::write(&cfg_path, config_toml(&data, &base)).unwrap();
+    let cfg = Arc::new(AppConfig::load_path(&cfg_path).unwrap());
+    let app = create_app(cfg).unwrap();
+
+    tokio::spawn(async move {
+        axum::serve(
+            listener,
+            app.into_make_service_with_connect_info::<SocketAddr>(),
+        )
+        .await
+        .expect("server");
+    });
+
+    tokio::time::sleep(Duration::from_millis(80)).await;
+
+    let client = reqwest::Client::builder()
+        .timeout(Duration::from_secs(30))
+        .build()
+        .unwrap();
+
+    let file_part = reqwest::multipart::Part::bytes(b"x".to_vec())
+        .file_name("t.txt")
+        .mime_str("text/plain")
+        .unwrap();
+    let form = reqwest::multipart::Form::new()
+        .text("time", "hour")
+        .part("file", file_part);
+
+    let res = client
+        .post(format!("{base}upload"))
+        .multipart(form)
+        .send()
+        .await
+        .expect("upload request");
+    assert!(res.status().is_success(), "upload status {}", res.status());
+    let html = res.text().await.expect("upload body");
+
+    let re = Regex::new(r"f/([A-Za-z0-9_-]+)\?d=1").unwrap();
+    let link_id = re
+        .captures(&html)
+        .and_then(|c| c.get(1).map(|m| m.as_str().to_string()))
+        .expect("link id in upload result");
+
+    let complete_url = format!("{base}upload/complete/{link_id}");
+    let page = client.get(&complete_url).send().await.expect("complete get");
+    assert!(page.status().is_success());
+    let body = page.text().await.expect("complete body");
+
+    assert!(
+        !body.contains("Remove file"),
+        "delete row should be hidden without v token (link_id={link_id})"
+    );
+}
+
+#[tokio::test]
 async fn download_wrong_password_returns_403_html() {
     let tmp = TempDir::new().unwrap();
     let data = tmp.path().join("data");
