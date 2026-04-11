@@ -238,6 +238,9 @@ impl AppConfig {
         {
             anyhow::bail!("ui.default_locale must be \"en\", \"fr\", or \"ja\"");
         }
+        if self.limits.max_async_upload_sessions == 0 {
+            anyhow::bail!("limits.max_async_upload_sessions must be at least 1");
+        }
         Ok(())
     }
 
@@ -251,6 +254,14 @@ impl AppConfig {
             u.push('/');
         }
         u
+    }
+
+    pub fn session_cookie_secure(&self) -> bool {
+        self.server
+            .public_base_url
+            .trim_start_matches(|c: char| c.is_ascii_whitespace())
+            .to_ascii_lowercase()
+            .starts_with("https://")
     }
 
     pub fn availability_enabled(&self, key: &str) -> bool {

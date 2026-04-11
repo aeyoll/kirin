@@ -127,12 +127,15 @@ pub async fn admin_login(
     }
     let exp = chrono::Utc::now().timestamp() + 12 * 3600;
     let token = state.sign_admin_session(exp);
-    let cookie = Cookie::build(("jfr_admin", token))
+    let mut b = Cookie::build(("jfr_admin", token))
         .path("/admin")
         .http_only(true)
         .same_site(SameSite::Lax)
-        .max_age(cookie::time::Duration::hours(12))
-        .build();
+        .max_age(cookie::time::Duration::hours(12));
+    if state.cfg.session_cookie_secure() {
+        b = b.secure(true);
+    }
+    let cookie = b.build();
     Ok((jar.add(cookie), Redirect::to("/admin")).into_response())
 }
 
