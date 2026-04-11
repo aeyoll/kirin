@@ -8,6 +8,7 @@ pub struct TemplateEngine {
 impl TemplateEngine {
     pub fn embedded() -> anyhow::Result<Self> {
         let mut env = Environment::new();
+        const BASE: &str = include_str!(concat!(env!("CARGO_MANIFEST_DIR"), "/templates/base.html"));
         const INDEX: &str = include_str!(concat!(env!("CARGO_MANIFEST_DIR"), "/templates/index.html"));
         const DOWNLOAD: &str =
             include_str!(concat!(env!("CARGO_MANIFEST_DIR"), "/templates/download.html"));
@@ -18,6 +19,7 @@ impl TemplateEngine {
             include_str!(concat!(env!("CARGO_MANIFEST_DIR"), "/templates/admin_login.html"));
         const UPLOAD_RESULT: &str =
             include_str!(concat!(env!("CARGO_MANIFEST_DIR"), "/templates/upload_result.html"));
+        env.add_template("base.html", BASE)?;
         env.add_template("index.html", INDEX)?;
         env.add_template("download.html", DOWNLOAD)?;
         env.add_template("delete_confirm.html", DELETE)?;

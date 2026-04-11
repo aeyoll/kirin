@@ -1,21 +1,37 @@
-<!DOCTYPE html>
-<html lang="en">
-<head>
-  <meta charset="utf-8" />
-  <title>Admin login</title>
-  <link rel="stylesheet" href="/static/style.css" />
-</head>
-<body>
-  <main>
-    <h1>Administration</h1>
-    {% if message %}<p role="alert">{{ message }}</p>{% endif %}
-    <form method="post" action="/admin/login">
-      <p>
-        <label for="admin_password">Admin password</label>
-        <input type="password" name="admin_password" id="admin_password" autocomplete="current-password" required />
-      </p>
-      <button type="submit">Login</button>
-    </form>
-  </main>
-</body>
-</html>
+{% extends "base.html" %}
+{% block title %}Admin login{% endblock %}
+{% block page_header %}
+<h1 class="text-2xl font-semibold tracking-tight text-slate-900 dark:text-white sm:text-3xl">Administration</h1>
+<p class="text-slate-600 dark:text-slate-400">Sign in with the admin password.</p>
+{% endblock %}
+{% block main %}
+{% if message %}
+<p class="mb-6 rounded-lg border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-800 dark:border-red-900/50 dark:bg-red-950/40 dark:text-red-200" role="alert">{{ message }}</p>
+{% endif %}
+<div class="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm dark:border-slate-800 dark:bg-slate-900/50 dark:shadow-none">
+  <form method="post" action="/admin/login" class="space-y-5">
+    <div>
+      <label for="admin_password" class="mb-2 block text-sm font-medium text-slate-700 dark:text-slate-300">Admin password</label>
+      <input
+        type="password"
+        name="admin_password"
+        id="admin_password"
+        autocomplete="current-password"
+        required
+        class="block w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-slate-900 shadow-sm focus:border-indigo-500 focus:outline-none focus:ring-2 focus:ring-indigo-500 dark:border-slate-600 dark:bg-slate-800 dark:text-slate-100 dark:focus:border-indigo-400 dark:focus:ring-indigo-400"
+      />
+    </div>
+    <button
+      type="submit"
+      class="inline-flex w-full items-center justify-center rounded-lg bg-indigo-600 px-4 py-2.5 text-sm font-semibold text-white shadow-sm transition hover:bg-indigo-500 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2 dark:bg-indigo-500 dark:hover:bg-indigo-400 dark:focus:ring-offset-slate-950 sm:w-auto"
+    >Login</button>
+  </form>
+</div>
+{% endblock %}
+{% block footer %}
+<footer class="mt-12 border-t border-slate-200 pt-6 dark:border-slate-800">
+  <p class="text-sm text-slate-600 dark:text-slate-400">
+    <a href="/" class="font-medium text-indigo-600 underline-offset-2 hover:text-indigo-500 hover:underline dark:text-indigo-400 dark:hover:text-indigo-300">Back to upload</a>
+  </p>
+</footer>
+{% endblock %}

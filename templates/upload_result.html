@@ -1,20 +1,38 @@
-<!DOCTYPE html>
-<html lang="en">
-<head>
-  <meta charset="utf-8" />
-  <title>Upload complete</title>
-  <link rel="stylesheet" href="/static/style.css" />
-</head>
-<body>
-  <main>
-    <h1>Upload complete</h1>
-    <p>Your file: <strong>{{ original_name }}</strong></p>
-    <ul>
-      <li><a href="{{ download_page|safe }}">Download page</a> — <span>{{ download_page|safe }}</span></li>
-      <li><a href="{{ direct_download|safe }}">Direct download</a> — <span>{{ direct_download|safe }}</span></li>
-      <li><a href="{{ delete_link|safe }}">Delete link</a> — <span>{{ delete_link|safe }}</span></li>
-    </ul>
-    <p><a href="/">Upload another file</a></p>
-  </main>
-</body>
-</html>
+{% extends "base.html" %}
+{% block title %}Upload complete{% endblock %}
+{% block page_header %}
+<h1 class="text-2xl font-semibold tracking-tight text-slate-900 dark:text-white sm:text-3xl">Upload complete</h1>
+<p class="text-slate-600 dark:text-slate-400">Share these links with people who need the file.</p>
+{% endblock %}
+{% block main %}
+<div class="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm dark:border-slate-800 dark:bg-slate-900/50 dark:shadow-none">
+  <p class="text-slate-700 dark:text-slate-300">Your file: <span class="font-semibold text-slate-900 dark:text-white">{{ original_name }}</span></p>
+  <ul class="mt-6 space-y-4 text-sm">
+    <li class="rounded-lg border border-slate-200 bg-slate-50/80 p-4 dark:border-slate-700 dark:bg-slate-800/40">
+      <div class="font-medium text-slate-900 dark:text-white">Download page</div>
+      <a href="{{ download_page|safe }}" class="mt-1 inline-block font-medium text-indigo-600 underline-offset-2 hover:underline dark:text-indigo-400">Open download page</a>
+      <p class="mt-2 break-all font-mono text-xs text-slate-600 dark:text-slate-400">{{ download_page|safe }}</p>
+    </li>
+    <li class="rounded-lg border border-slate-200 bg-slate-50/80 p-4 dark:border-slate-700 dark:bg-slate-800/40">
+      <div class="font-medium text-slate-900 dark:text-white">Direct download</div>
+      <a href="{{ direct_download|safe }}" class="mt-1 inline-block font-medium text-indigo-600 underline-offset-2 hover:underline dark:text-indigo-400">Direct link</a>
+      <p class="mt-2 break-all font-mono text-xs text-slate-600 dark:text-slate-400">{{ direct_download|safe }}</p>
+    </li>
+    <li class="rounded-lg border border-slate-200 bg-slate-50/80 p-4 dark:border-slate-700 dark:bg-slate-800/40">
+      <div class="font-medium text-slate-900 dark:text-white">Delete link</div>
+      <a href="{{ delete_link|safe }}" class="mt-1 inline-block font-medium text-indigo-600 underline-offset-2 hover:underline dark:text-indigo-400">Remove file</a>
+      <p class="mt-2 break-all font-mono text-xs text-slate-600 dark:text-slate-400">{{ delete_link|safe }}</p>
+    </li>
+  </ul>
+  <p class="mt-8">
+    <a href="/" class="inline-flex items-center justify-center rounded-lg border border-slate-300 bg-white px-4 py-2 text-sm font-medium text-slate-700 shadow-sm transition hover:bg-slate-50 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2 dark:border-slate-600 dark:bg-slate-800 dark:text-slate-200 dark:hover:bg-slate-700 dark:focus:ring-offset-slate-950">Upload another file</a>
+  </p>
+</div>
+{% endblock %}
+{% block footer %}
+<footer class="mt-12 border-t border-slate-200 pt-6 dark:border-slate-800">
+  <p class="text-sm text-slate-600 dark:text-slate-400">
+    <a href="/admin" class="font-medium text-indigo-600 underline-offset-2 hover:text-indigo-500 hover:underline dark:text-indigo-400 dark:hover:text-indigo-300">Admin</a>
+  </p>
+</footer>
+{% endblock %}

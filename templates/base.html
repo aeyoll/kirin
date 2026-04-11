@@ -1,0 +1,79 @@
+<!DOCTYPE html>
+<html lang="en" class="h-full">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <meta name="color-scheme" content="light dark" />
+  <title>{% block title %}Kirin{% endblock %}</title>
+  <link rel="stylesheet" href="/static/app.css" />
+  {% block head_extra %}{% endblock %}
+  <script>
+    (function () {
+      try {
+        var k = 'kirin-theme';
+        var v = localStorage.getItem(k);
+        if (v === 'dark' || (!v && window.matchMedia('(prefers-color-scheme: dark)').matches)) {
+          document.documentElement.classList.add('dark');
+        }
+      } catch (e) {}
+    })();
+  </script>
+</head>
+<body class="min-h-full bg-slate-50 text-slate-900 antialiased dark:bg-slate-950 dark:text-slate-100">
+  <a
+    href="#main"
+    class="sr-only rounded-lg bg-indigo-600 px-4 py-2 text-white shadow focus:not-sr-only focus:absolute focus:left-4 focus:top-4 focus:z-50 focus:inline-block focus:outline-none focus:ring-2 focus:ring-indigo-400 focus:ring-offset-2 dark:focus:ring-offset-slate-950"
+  >Skip to main content</a>
+  <div class="mx-auto flex min-h-full max-w-3xl flex-col px-4 py-8 sm:px-6 lg:max-w-4xl">
+    <div class="mb-8 flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
+      <div class="min-w-0 flex-1 space-y-1">{% block page_header %}{% endblock %}</div>
+      <button
+        type="button"
+        id="theme-toggle"
+        class="shrink-0 rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm font-medium text-slate-700 shadow-sm transition hover:bg-slate-50 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2 dark:border-slate-600 dark:bg-slate-800 dark:text-slate-200 dark:hover:bg-slate-700 dark:focus:ring-offset-slate-950"
+        aria-pressed="false"
+      >Theme</button>
+    </div>
+    <main id="main" class="flex-1">{% block main %}{% endblock %}</main>
+    {% block footer %}
+    <footer class="mt-12 border-t border-slate-200 pt-6 dark:border-slate-800">
+      <p class="text-sm text-slate-600 dark:text-slate-400">
+        <a href="/admin" class="font-medium text-indigo-600 underline-offset-2 hover:text-indigo-500 hover:underline dark:text-indigo-400 dark:hover:text-indigo-300">Admin</a>
+      </p>
+    </footer>
+    {% endblock %}
+  </div>
+  <script>
+    (function () {
+      var btn = document.getElementById('theme-toggle');
+      if (!btn) return;
+      var storageKey = 'kirin-theme';
+      function isDark() {
+        return document.documentElement.classList.contains('dark');
+      }
+      function syncLabel() {
+        var dark = isDark();
+        btn.setAttribute('aria-pressed', dark ? 'true' : 'false');
+        btn.setAttribute('aria-label', dark ? 'Switch to light mode' : 'Switch to dark mode');
+        btn.textContent = dark ? 'Light mode' : 'Dark mode';
+      }
+      syncLabel();
+      btn.addEventListener('click', function () {
+        var nextDark = !isDark();
+        if (nextDark) {
+          document.documentElement.classList.add('dark');
+          try {
+            localStorage.setItem(storageKey, 'dark');
+          } catch (e) {}
+        } else {
+          document.documentElement.classList.remove('dark');
+          try {
+            localStorage.setItem(storageKey, 'light');
+          } catch (e) {}
+        }
+        syncLabel();
+      });
+    })();
+  </script>
+</body>
+</html>
