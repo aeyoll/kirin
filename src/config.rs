@@ -210,8 +210,9 @@ impl AppConfig {
                 anyhow::bail!("admin.password_sha256_hex too long");
             }
             if admin_pw.starts_with("$argon2") {
-                argon2::password_hash::PasswordHash::new(admin_pw)
-                    .map_err(|_| anyhow::anyhow!("admin.password_sha256_hex: invalid Argon2 PHC"))?;
+                argon2::password_hash::PasswordHash::new(admin_pw).map_err(|_| {
+                    anyhow::anyhow!("admin.password_sha256_hex: invalid Argon2 PHC")
+                })?;
             } else if admin_pw.len() == 64 && admin_pw.chars().all(|c| c.is_ascii_hexdigit()) {
                 let bytes = hex::decode(admin_pw.to_ascii_lowercase())
                     .map_err(|_| anyhow::anyhow!("admin.password_sha256_hex: invalid hex"))?;
@@ -224,9 +225,10 @@ impl AppConfig {
                 );
             }
         }
-        let key_bytes = hex::decode(self.admin.session_signing_key_hex.to_ascii_lowercase()).map_err(
-            |_| anyhow::anyhow!("admin.session_signing_key_hex must be 64 valid hex characters"),
-        )?;
+        let key_bytes = hex::decode(self.admin.session_signing_key_hex.to_ascii_lowercase())
+            .map_err(|_| {
+                anyhow::anyhow!("admin.session_signing_key_hex must be 64 valid hex characters")
+            })?;
         if key_bytes.len() != 32 {
             anyhow::bail!(
                 "admin.session_signing_key_hex must decode to 32 bytes (64 hex chars); use `openssl rand -hex 32`"

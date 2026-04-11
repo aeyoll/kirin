@@ -38,10 +38,7 @@ impl IntoResponse for AppError {
             AppError::BadRequest(m) => (StatusCode::BAD_REQUEST, m.clone()),
             AppError::PayloadTooLarge => (StatusCode::PAYLOAD_TOO_LARGE, self.to_string()),
             AppError::Conflict => (StatusCode::CONFLICT, self.to_string()),
-            AppError::ServiceUnavailable => (
-                StatusCode::SERVICE_UNAVAILABLE,
-                self.to_string(),
-            ),
+            AppError::ServiceUnavailable => (StatusCode::SERVICE_UNAVAILABLE, self.to_string()),
             AppError::Internal => (StatusCode::INTERNAL_SERVER_ERROR, self.to_string()),
         };
         let body = Json(ApiErr { error: &msg });

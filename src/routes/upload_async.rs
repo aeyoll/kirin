@@ -1,7 +1,7 @@
 use crate::error::AppError;
-use crate::multipart_util::{field_text_limited, MAX_MULTIPART_FIELDS};
 use crate::expiry::expires_at_unix;
 use crate::models::{AsyncUploadSession, FileMeta};
+use crate::multipart_util::{field_text_limited, MAX_MULTIPART_FIELDS};
 use crate::password::hash_download_password;
 use crate::routes::common::{challenge_upload, gen_delete_code, gen_link_id, gen_rolling_code};
 use crate::state::AppState;
@@ -95,11 +95,8 @@ pub async fn async_init(
     let temp_blob_path = dir.join(format!("{ref_token}.data"));
     let (stale_paths, capacity_ok) = {
         let mut guard = state.async_sessions.lock().await;
-        let paths = take_expired_async_sessions(
-            &mut guard,
-            now,
-            cfg.limits.async_upload_session_ttl_secs,
-        );
+        let paths =
+            take_expired_async_sessions(&mut guard, now, cfg.limits.async_upload_session_ttl_secs);
         let ok = guard.len() < cfg.limits.max_async_upload_sessions;
         (paths, ok)
     };
@@ -240,9 +237,7 @@ pub async fn async_end(
         ),
     };
     if expired {
-        let path = guard
-            .remove(&form.ref_token)
-            .map(|s| s.temp_blob_path);
+        let path = guard.remove(&form.ref_token).map(|s| s.temp_blob_path);
         drop(guard);
         if let Some(p) = path {
             let _ = tokio::fs::remove_file(p).await;

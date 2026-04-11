@@ -1,5 +1,5 @@
-use axum::extract::multipart::Field;
 use crate::error::AppError;
+use axum::extract::multipart::Field;
 
 pub const MAX_MULTIPART_FIELDS: usize = 64;
 pub const MAX_TEXT_PART_BYTES: usize = 64 * 1024;
@@ -13,7 +13,9 @@ pub async fn field_text_limited(field: &mut Field<'_>) -> Result<String, AppErro
     {
         let next = acc.len().saturating_add(chunk.len());
         if next > MAX_TEXT_PART_BYTES {
-            return Err(AppError::BadRequest("multipart text field too large".into()));
+            return Err(AppError::BadRequest(
+                "multipart text field too large".into(),
+            ));
         }
         acc.extend_from_slice(&chunk);
     }
