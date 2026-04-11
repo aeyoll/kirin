@@ -13,5 +13,5 @@ pub use download::{download_get, download_post};
 pub use html::index_get;
 pub use locale::{locale_post, request_locale, tr_value, LOCALE_COOKIE_NAME};
 pub use script::script_upload;
-pub use upload::{upload_complete_get, upload_multipart};
+pub use upload::{upload_complete_get, upload_complete_session_post, upload_multipart};
 pub use upload_async::{async_end, async_init, async_push};

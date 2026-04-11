@@ -7,7 +7,7 @@ use crate::routes::common::{challenge_upload, gen_delete_code, gen_link_id, vali
 use crate::routes::download::{render_file_unavailable, FileUnavailableKind};
 use crate::routes::locale::{request_locale, tr_value};
 use crate::state::AppState;
-use axum::extract::{ConnectInfo, Multipart, Path, Query, State};
+use axum::extract::{ConnectInfo, Form, Multipart, Path, Query, State};
 use axum::http::HeaderMap;
 use axum::response::{Html, IntoResponse, Redirect, Response};
 use axum_extra::extract::cookie::CookieJar;
@@ -15,6 +15,7 @@ use blake3::Hasher;
 use std::collections::HashMap;
 use std::net::SocketAddr;
 use std::path::PathBuf;
+use subtle::ConstantTimeEq;
 use tokio::fs::File;
 use tokio::io::AsyncWriteExt;
 
@@ -83,6 +84,38 @@ pub async fn upload_complete_get(
         .render(ctx)
         .map_err(|_| AppError::Internal)?;
     Ok(Html(html).into_response())
+}
+
+#[derive(serde::Deserialize)]
+pub struct UploadCompleteSessionForm {
+    pub link_id: String,
+    pub delete_code: String,
+}
+
+/// Opens the signed upload result page after async upload (plain-text `link_id` + `delete_code`).
+pub async fn upload_complete_session_post(
+    State(state): State<AppState>,
+    Form(form): Form<UploadCompleteSessionForm>,
+) -> Result<Response, AppError> {
+    if !valid_link_id(&form.link_id) {
+        return Err(AppError::Forbidden);
+    }
+    let meta = state
+        .storage
+        .read_meta(&form.link_id)
+        .await?
+        .ok_or(AppError::Forbidden)?;
+    if form.delete_code.len() != meta.delete_code.len()
+        || !bool::from(ConstantTimeEq::ct_eq(
+            form.delete_code.as_bytes(),
+            meta.delete_code.as_bytes(),
+        ))
+    {
+        return Err(AppError::Forbidden);
+    }
+    let v = state.sign_upload_complete_view(&form.link_id, &meta.delete_code);
+    let target = format!("/upload/complete/{}?v={}", form.link_id, v);
+    Ok(Redirect::to(&target).into_response())
 }
 
 pub struct UploadResult {

@@ -2,7 +2,7 @@ use crate::config::AppConfig;
 use crate::routes::{
     admin_delete, admin_get, admin_login, admin_logout, async_end, async_init, async_push,
     download_get, download_post, index_get, locale_post, script_upload, upload_complete_get,
-    upload_multipart,
+    upload_complete_session_post, upload_multipart,
 };
 use crate::state::AppState;
 use crate::static_assets::static_get;
@@ -53,6 +53,10 @@ pub fn create_app(cfg: Arc<AppConfig>) -> anyhow::Result<Router> {
         .route("/", get(index_get))
         .route("/locale", post(locale_post))
         .route("/upload", post(upload_multipart))
+        .route(
+            "/upload/complete/session",
+            post(upload_complete_session_post),
+        )
         .route("/upload/complete/{link_id}", get(upload_complete_get))
         .route("/script", post(script_upload))
         .route(

@@ -640,3 +640,132 @@ async fn post_locale_sets_cookie_for_ja() {
         joined
     );
 }
+
+#[tokio::test]
+async fn async_chunked_upload_roundtrip_and_result_session() {
+    let tmp = TempDir::new().unwrap();
+    let data = tmp.path().join("data");
+    std::fs::create_dir_all(&data).unwrap();
+
+    let listener = TcpListener::bind("127.0.0.1:0").await.unwrap();
+    let addr = listener.local_addr().unwrap();
+    let port = addr.port();
+    let base = format!("http://127.0.0.1:{port}/");
+
+    let cfg_path = tmp.path().join("config.toml");
+    std::fs::write(&cfg_path, config_toml(&data, &base)).unwrap();
+    let cfg = Arc::new(AppConfig::load_path(&cfg_path).unwrap());
+    let app = create_app(cfg).unwrap();
+
+    tokio::spawn(async move {
+        axum::serve(
+            listener,
+            app.into_make_service_with_connect_info::<SocketAddr>(),
+        )
+        .await
+        .expect("server");
+    });
+
+    tokio::time::sleep(Duration::from_millis(80)).await;
+
+    let client = reqwest::Client::builder()
+        .timeout(Duration::from_secs(30))
+        .build()
+        .unwrap();
+
+    let payload: Vec<u8> = (0u8..=255).cycle().take(7000).collect();
+
+    let init = client
+        .post(format!("{base}api/upload/async/init"))
+        .form(&[
+            ("filename", "chunked.bin"),
+            ("time", "hour"),
+            ("type", "application/octet-stream"),
+        ])
+        .send()
+        .await
+        .expect("async init");
+    assert!(init.status().is_success(), "init {}", init.status());
+    let init_text = init.text().await.expect("init body");
+    let mut init_lines = init_text.lines();
+    let ref_token = init_lines.next().expect("ref line").trim();
+    let mut rolling = init_lines.next().expect("code line").trim().to_string();
+    assert!(!ref_token.is_empty() && rolling.len() == 4);
+
+    let chunk_a = &payload[..4000];
+    let chunk_b = &payload[4000..];
+
+    for chunk in [chunk_a, chunk_b] {
+        let form = reqwest::multipart::Form::new()
+            .text("ref", ref_token.to_string())
+            .text("code", rolling.clone())
+            .part(
+                "data",
+                reqwest::multipart::Part::bytes(chunk.to_vec())
+                    .mime_str("application/octet-stream")
+                    .unwrap(),
+            );
+        let push = client
+            .post(format!("{base}api/upload/async/push"))
+            .multipart(form)
+            .send()
+            .await
+            .expect("async push");
+        assert!(push.status().is_success(), "push {}", push.status());
+        rolling = push.text().await.expect("push body").trim().to_string();
+        assert_eq!(rolling.len(), 4);
+    }
+
+    let end = client
+        .post(format!("{base}api/upload/async/end"))
+        .form(&[("ref", ref_token), ("code", rolling.as_str())])
+        .send()
+        .await
+        .expect("async end");
+    assert!(end.status().is_success(), "end {}", end.status());
+    let end_text = end.text().await.expect("end body");
+    let mut end_lines = end_text.lines().filter(|l| !l.is_empty());
+    let link_id = end_lines.next().expect("link id").trim();
+    let delete_code = end_lines.next().expect("delete code").trim();
+    assert!(!link_id.is_empty() && !delete_code.is_empty());
+
+    let dl_url = format!("{base}f/{link_id}?d=1");
+    let dl = client.get(&dl_url).send().await.expect("download");
+    assert!(dl.status().is_success(), "download {}", dl.status());
+    assert_eq!(dl.bytes().await.unwrap().as_ref(), payload.as_slice());
+
+    let no_redirect = reqwest::Client::builder()
+        .redirect(reqwest::redirect::Policy::none())
+        .build()
+        .unwrap();
+    let sess = no_redirect
+        .post(format!("{base}upload/complete/session"))
+        .form(&[("link_id", link_id), ("delete_code", delete_code)])
+        .send()
+        .await
+        .expect("session");
+    assert_eq!(
+        sess.status(),
+        reqwest::StatusCode::SEE_OTHER,
+        "session redirect"
+    );
+    let loc = sess
+        .headers()
+        .get(reqwest::header::LOCATION)
+        .expect("Location")
+        .to_str()
+        .unwrap();
+    assert!(loc.contains("/upload/complete/"));
+    assert!(loc.contains("v="));
+
+    let result_url = format!("{}{}", base.trim_end_matches('/'), loc);
+    let result_page = client.get(&result_url).send().await.expect("result get");
+    assert!(result_page.status().is_success());
+    let html = result_page.text().await.unwrap();
+    assert!(
+        html.contains("Upload complete")
+            || html.contains("Envoi terminé")
+            || html.contains("アップロード完了"),
+        "expected upload result HTML"
+    );
+}

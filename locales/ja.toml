@@ -25,6 +25,8 @@ one_time_help = "誰かがファイルをダウンロードするとリンクは
 download_password_optional = "ダウンロード用パスワード（任意）"
 upload_password = "アップロード用パスワード"
 send_file = "ファイルを送信"
+uploading = "アップロード中…"
+upload_failed = "アップロードに失敗しました。もう一度お試しください。"
 
 [avail]
 minute = "1分"

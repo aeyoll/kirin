@@ -10,7 +10,7 @@ The Rust crate lives at the repository root (`Cargo.toml`, `src/`). The PHP refe
 |-------------|--------------|
 | `index.php` | `GET /` upload UI |
 | `f.php?h=` | `GET /f/{id}` download gate / preview; `GET /f/{id}?d=1` stream; `GET /f/{id}?d={code}` delete UI |
-| `script.php` multipart upload | `POST /script` (multipart) |
+| `script.php` multipart upload | `POST /script` (multipart); browser UI uses `POST /api/upload/async/*` then `POST /upload/complete/session` for the signed result page |
 | `script.php?init_async` / `push_async` / `end_async` | `POST /api/upload/async/init`, `/push`, `/end` |
 | `admin.php` | `GET/POST /admin` (session cookie after password) |
 | `lib/config.local.php` | `config.toml` |

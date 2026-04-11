@@ -8,10 +8,20 @@
 {% if upload_error %}
 <div class="mb-6 rounded-lg border border-red-200 bg-red-50 px-4 py-3 text-red-800 dark:border-red-900/50 dark:bg-red-950/40 dark:text-red-200" role="alert">{{ upload_error }}</div>
 {% endif %}
+<div id="upload-async-error" class="mb-6 hidden rounded-lg border border-red-200 bg-red-50 px-4 py-3 text-red-800 dark:border-red-900/50 dark:bg-red-950/40 dark:text-red-200" role="alert" aria-live="polite" tabindex="-1"></div>
 <section class="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm dark:border-slate-800 dark:bg-slate-900/50 dark:shadow-none" aria-labelledby="upload-heading">
   <h2 id="upload-heading" class="text-lg font-medium text-slate-900 dark:text-white">{{ tr["index.upload_heading"] }}</h2>
   <p class="mt-1 text-sm text-slate-600 dark:text-slate-400">{{ tr["index.upload_lead"] }}</p>
-  <form method="post" action="/upload" enctype="multipart/form-data" id="upload-form" class="mt-6 space-y-6" novalidate>
+  <form
+    method="post"
+    action="/upload"
+    enctype="multipart/form-data"
+    id="upload-form"
+    class="mt-6 space-y-6"
+    novalidate
+    data-msg-uploading="{{ tr["index.uploading"] }}"
+    data-msg-failed="{{ tr["index.upload_failed"] }}"
+  >
     <div>
       <label
         for="file"
@@ -78,9 +88,163 @@
     <div class="flex flex-wrap items-center gap-3 pt-2">
       <button
         type="submit"
+        id="upload-submit"
         class="inline-flex items-center justify-center rounded-lg bg-indigo-600 px-5 py-2.5 text-sm font-semibold text-white shadow-sm transition hover:bg-indigo-500 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2 dark:bg-indigo-500 dark:hover:bg-indigo-400 dark:focus:ring-offset-slate-950"
       >{{ tr["index.send_file"] }}</button>
     </div>
   </form>
 </section>
+<script>
+  (function () {
+    if (typeof fetch !== 'function') return;
+    var form = document.getElementById('upload-form');
+    if (!form) return;
+    var fileInput = document.getElementById('file');
+    var submitBtn = document.getElementById('upload-submit');
+    var errBox = document.getElementById('upload-async-error');
+    var chunkSize = 2048 * 1024;
+    var defaultBtnLabel = submitBtn ? submitBtn.textContent : '';
+
+    function hideError() {
+      if (!errBox) return;
+      errBox.textContent = '';
+      errBox.classList.add('hidden');
+    }
+
+    function showError(msg) {
+      if (!errBox) {
+        window.alert(msg);
+        return;
+      }
+      errBox.textContent = msg;
+      errBox.classList.remove('hidden');
+      errBox.focus();
+    }
+
+    function readJsonError(res) {
+      return res.json().then(function (j) {
+        return (j && j.error) ? j.error : res.statusText;
+      }).catch(function () {
+        return res.statusText;
+      });
+    }
+
+    function resetSubmitUi() {
+      if (submitBtn) {
+        submitBtn.disabled = false;
+        submitBtn.setAttribute('aria-busy', 'false');
+        submitBtn.textContent = defaultBtnLabel;
+      }
+    }
+
+    form.addEventListener('submit', function (ev) {
+      ev.preventDefault();
+      hideError();
+      if (!fileInput || !fileInput.files || fileInput.files.length === 0) {
+        showError(form.dataset.msgFailed || 'Upload failed.');
+        return;
+      }
+      var file = fileInput.files[0];
+      var timeEl = document.getElementById('time');
+      var timeVal = timeEl ? timeEl.value : 'hour';
+      if (submitBtn) {
+        submitBtn.disabled = true;
+        submitBtn.setAttribute('aria-busy', 'true');
+        submitBtn.textContent = form.dataset.msgUploading || defaultBtnLabel;
+      }
+
+      var params = new URLSearchParams();
+      params.set('filename', file.name || 'upload.bin');
+      params.set('time', timeVal);
+      var otd = document.getElementById('otd');
+      if (otd && otd.checked) params.set('one_time_download', '1');
+      var keyEl = document.getElementById('key');
+      if (keyEl && keyEl.value) params.set('key', keyEl.value);
+      var upw = document.getElementById('upload_password');
+      if (upw && upw.value) params.set('upload_password', upw.value);
+      if (file.type) params.set('type', file.type);
+
+      var msgFailed = form.dataset.msgFailed || 'Upload failed.';
+
+      fetch('/api/upload/async/init', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+        body: params.toString(),
+        credentials: 'same-origin',
+      }).then(function (res) {
+        if (!res.ok) return readJsonError(res).then(function (msg) { throw new Error(msg); });
+        return res.text();
+      }).then(function (text) {
+        var lines = text.replace(/\r\n/g, '\n').trimEnd().split('\n');
+        var refToken = (lines[0] || '').trim();
+        var rolling = (lines[1] || '').trim();
+        if (!refToken || rolling.length !== 4) throw new Error(msgFailed);
+        var sess = { refToken: refToken, code: rolling };
+        var offset = 0;
+        function pushNext() {
+          if (offset >= file.size) return Promise.resolve(sess);
+          var end = Math.min(offset + chunkSize, file.size);
+          var slice = file.slice(offset, end);
+          offset = end;
+          var fd = new FormData();
+          fd.append('ref', sess.refToken);
+          fd.append('code', sess.code);
+          fd.append('data', slice, 'chunk');
+          return fetch('/api/upload/async/push', {
+            method: 'POST',
+            body: fd,
+            credentials: 'same-origin',
+          }).then(function (res) {
+            if (!res.ok) return readJsonError(res).then(function (msg) { throw new Error(msg); });
+            return res.text();
+          }).then(function (nextCode) {
+            sess.code = nextCode.trim();
+            if (sess.code.length !== 4) throw new Error(msgFailed);
+            return pushNext();
+          });
+        }
+        return pushNext();
+      }).then(function (sess) {
+        var endParams = new URLSearchParams();
+        endParams.set('ref', sess.refToken);
+        endParams.set('code', sess.code);
+        return fetch('/api/upload/async/end', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+          body: endParams.toString(),
+          credentials: 'same-origin',
+        });
+      }).then(function (res) {
+        if (!res.ok) return readJsonError(res).then(function (msg) { throw new Error(msg); });
+        return res.text();
+      }).then(function (endText) {
+        var parts = endText.replace(/\r\n/g, '\n').split('\n').map(function (l) { return l.trim(); }).filter(Boolean);
+        var linkId = parts[0];
+        var deleteCode = parts[1];
+        if (!linkId || !deleteCode) throw new Error(msgFailed);
+        var sessionParams = new URLSearchParams();
+        sessionParams.set('link_id', linkId);
+        sessionParams.set('delete_code', deleteCode);
+        return fetch('/upload/complete/session', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+          body: sessionParams.toString(),
+          credentials: 'same-origin',
+        });
+      }).then(function (sessionRes) {
+        if (!sessionRes.ok) {
+          return readJsonError(sessionRes).then(function (msg) { throw new Error(msg); });
+        }
+        if (sessionRes.url) {
+          window.location.href = sessionRes.url;
+          return;
+        }
+        throw new Error(msgFailed);
+      }).catch(function (err) {
+        showError(err && err.message ? err.message : msgFailed);
+        resetSubmitUi();
+      });
+    });
+  })();
+</script>
 {% endblock %}

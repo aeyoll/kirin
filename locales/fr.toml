@@ -25,6 +25,8 @@ one_time_help = "Le lien cesse de fonctionner dès que quelqu'un télécharge le
 download_password_optional = "Mot de passe de téléchargement (facultatif)"
 upload_password = "Mot de passe d'envoi"
 send_file = "Envoyer le fichier"
+uploading = "Envoi en cours…"
+upload_failed = "L'envoi a échoué. Veuillez réessayer."
 
 [avail]
 minute = "Une minute"

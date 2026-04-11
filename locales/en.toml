@@ -25,6 +25,8 @@ one_time_help = "The link stops working once someone downloads the file."
 download_password_optional = "Download password (optional)"
 upload_password = "Upload password"
 send_file = "Send file"
+uploading = "Uploading…"
+upload_failed = "Upload failed. Please try again."
 
 [avail]
 minute = "One minute"

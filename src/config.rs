@@ -147,8 +147,7 @@ impl Default for FeaturesSection {
     }
 }
 
-#[derive(Debug, Clone, Deserialize)]
-#[derive(Default)]
+#[derive(Debug, Clone, Deserialize, Default)]
 pub struct AdminSection {
     #[serde(default)]
     pub password_sha256_hex: String,
@@ -157,7 +156,6 @@ pub struct AdminSection {
     #[serde(default)]
     pub allowed_admin_ips: Vec<String>,
 }
-
 
 #[derive(Debug, Clone, Deserialize)]
 pub struct UiSection {
