@@ -58,10 +58,9 @@ pub async fn upload_complete_get(
     }
     let tr = tr_value(&state.i18n, loc);
     let base = cfg.public_base_url_normalized();
-    let show_delete = q
-        .v
-        .as_deref()
-        .is_some_and(|t| state.verify_upload_complete_view(&link_id, &meta.delete_code, t));
+    let show_delete =
+        q.v.as_deref()
+            .is_some_and(|t| state.verify_upload_complete_view(&link_id, &meta.delete_code, t));
     let delete_link = if show_delete {
         format!("{}f/{}?d={}", base, meta.link_id, meta.delete_code)
     } else {
@@ -140,9 +139,7 @@ pub async fn process_multipart(
                 }
                 size += chunk.len() as u64;
                 hasher.update(&chunk);
-                f.write_all(&chunk)
-                    .await
-                    .map_err(|_| AppError::Internal)?;
+                f.write_all(&chunk).await.map_err(|_| AppError::Internal)?;
             }
             f.flush().await.map_err(|_| AppError::Internal)?;
             tmp_path = Some(tmp_file.clone());
@@ -171,7 +168,11 @@ pub async fn process_multipart(
         return Err(AppError::BadRequest("invalid time".into()));
     }
 
-    let one_time = cfg.features.one_time_download && map.get("one_time_download").map(|v| v == "1").unwrap_or(false);
+    let one_time = cfg.features.one_time_download
+        && map
+            .get("one_time_download")
+            .map(|v| v == "1")
+            .unwrap_or(false);
     if !cfg.features.one_time_download && map.contains_key("one_time_download") {
         let _ = tokio::fs::remove_file(&tmp_path).await;
         return Err(AppError::BadRequest("one time disabled".into()));
@@ -218,9 +219,7 @@ pub async fn process_multipart(
     let pw_hash = if key_plain.is_empty() {
         None
     } else {
-        Some(
-            hash_download_password(&key_plain).map_err(|_| AppError::Internal)?,
-        )
+        Some(hash_download_password(&key_plain).map_err(|_| AppError::Internal)?)
     };
 
     let meta = FileMeta {
@@ -242,5 +241,8 @@ pub async fn process_multipart(
         .finalize_upload(&link_id, &tmp_path, &meta)
         .await?;
 
-    Ok(UploadResult { link_id, delete_code })
+    Ok(UploadResult {
+        link_id,
+        delete_code,
+    })
 }

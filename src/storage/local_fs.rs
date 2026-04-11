@@ -72,7 +72,10 @@ impl StorageBackend for LocalFsStorage {
 
     async fn read_meta(&self, link_id: &str) -> Result<Option<FileMeta>, AppError> {
         let p = self.meta_path(link_id);
-        if !tokio::fs::try_exists(&p).await.map_err(|_| AppError::Internal)? {
+        if !tokio::fs::try_exists(&p)
+            .await
+            .map_err(|_| AppError::Internal)?
+        {
             return Ok(None);
         }
         let raw = tokio::fs::read_to_string(&p)
@@ -84,7 +87,10 @@ impl StorageBackend for LocalFsStorage {
 
     async fn open_blob_path(&self, link_id: &str) -> Result<PathBuf, AppError> {
         let p = self.blob_path(link_id);
-        if tokio::fs::try_exists(&p).await.map_err(|_| AppError::Internal)? {
+        if tokio::fs::try_exists(&p)
+            .await
+            .map_err(|_| AppError::Internal)?
+        {
             Ok(p)
         } else {
             Err(AppError::NotFound)

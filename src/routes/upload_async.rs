@@ -50,8 +50,7 @@ pub async fn async_init(
     if !cfg.availability_enabled(&init.time) {
         return Err(AppError::BadRequest("invalid time".into()));
     }
-    let one_time = cfg.features.one_time_download
-        && init.one_time_download.as_deref() == Some("1");
+    let one_time = cfg.features.one_time_download && init.one_time_download.as_deref() == Some("1");
     if !cfg.features.one_time_download && init.one_time_download.is_some() {
         return Err(AppError::BadRequest("one time disabled".into()));
     }
@@ -146,9 +145,7 @@ pub async fn async_push(
                     return Err(AppError::PayloadTooLarge);
                 }
                 sess.accumulated = new_total;
-                f.write_all(&chunk)
-                    .await
-                    .map_err(|_| AppError::Internal)?;
+                f.write_all(&chunk).await.map_err(|_| AppError::Internal)?;
             }
             let new_code = gen_rolling_code(4);
             sess.rolling_code = new_code.clone();
@@ -184,7 +181,9 @@ pub async fn async_end(
     drop(guard);
 
     let tmp_path = sess.temp_blob_path.clone();
-    let data = tokio::fs::read(&tmp_path).await.map_err(|_| AppError::Internal)?;
+    let data = tokio::fs::read(&tmp_path)
+        .await
+        .map_err(|_| AppError::Internal)?;
     let hash = blake3::hash(&data);
     let now = chrono::Utc::now().timestamp();
     let link_len = cfg.limits.link_id_length.max(4).min(32) as usize;

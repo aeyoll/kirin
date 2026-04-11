@@ -13,11 +13,12 @@ pub async fn script_upload(
     let ip = addr.ip().to_string();
     let r = process_multipart(&state, multipart, &ip).await?;
     let base = state.cfg.public_base_url_normalized();
-    let body = format!(
-        "{}{}\n{}\n",
-        base,
-        r.link_id,
-        r.delete_code,
-    );
-    Ok(([(axum::http::header::CONTENT_TYPE, "text/plain; charset=utf-8")], body))
+    let body = format!("{}{}\n{}\n", base, r.link_id, r.delete_code,);
+    Ok((
+        [(
+            axum::http::header::CONTENT_TYPE,
+            "text/plain; charset=utf-8",
+        )],
+        body,
+    ))
 }

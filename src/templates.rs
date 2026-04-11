@@ -8,17 +8,28 @@ pub struct TemplateEngine {
 impl TemplateEngine {
     pub fn embedded() -> anyhow::Result<Self> {
         let mut env = Environment::new();
-        const BASE: &str = include_str!(concat!(env!("CARGO_MANIFEST_DIR"), "/templates/base.html"));
-        const INDEX: &str = include_str!(concat!(env!("CARGO_MANIFEST_DIR"), "/templates/index.html"));
-        const DOWNLOAD: &str =
-            include_str!(concat!(env!("CARGO_MANIFEST_DIR"), "/templates/download.html"));
-        const DELETE: &str =
-            include_str!(concat!(env!("CARGO_MANIFEST_DIR"), "/templates/delete_confirm.html"));
-        const ADMIN: &str = include_str!(concat!(env!("CARGO_MANIFEST_DIR"), "/templates/admin.html"));
-        const ADMIN_LOGIN: &str =
-            include_str!(concat!(env!("CARGO_MANIFEST_DIR"), "/templates/admin_login.html"));
-        const UPLOAD_RESULT: &str =
-            include_str!(concat!(env!("CARGO_MANIFEST_DIR"), "/templates/upload_result.html"));
+        const BASE: &str =
+            include_str!(concat!(env!("CARGO_MANIFEST_DIR"), "/templates/base.html"));
+        const INDEX: &str =
+            include_str!(concat!(env!("CARGO_MANIFEST_DIR"), "/templates/index.html"));
+        const DOWNLOAD: &str = include_str!(concat!(
+            env!("CARGO_MANIFEST_DIR"),
+            "/templates/download.html"
+        ));
+        const DELETE: &str = include_str!(concat!(
+            env!("CARGO_MANIFEST_DIR"),
+            "/templates/delete_confirm.html"
+        ));
+        const ADMIN: &str =
+            include_str!(concat!(env!("CARGO_MANIFEST_DIR"), "/templates/admin.html"));
+        const ADMIN_LOGIN: &str = include_str!(concat!(
+            env!("CARGO_MANIFEST_DIR"),
+            "/templates/admin_login.html"
+        ));
+        const UPLOAD_RESULT: &str = include_str!(concat!(
+            env!("CARGO_MANIFEST_DIR"),
+            "/templates/upload_result.html"
+        ));
         const FILE_UNAVAILABLE: &str = include_str!(concat!(
             env!("CARGO_MANIFEST_DIR"),
             "/templates/file_unavailable.html"
@@ -27,8 +38,10 @@ impl TemplateEngine {
             env!("CARGO_MANIFEST_DIR"),
             "/templates/download_forbidden.html"
         ));
-        const DELETE_DONE: &str =
-            include_str!(concat!(env!("CARGO_MANIFEST_DIR"), "/templates/delete_done.html"));
+        const DELETE_DONE: &str = include_str!(concat!(
+            env!("CARGO_MANIFEST_DIR"),
+            "/templates/delete_done.html"
+        ));
         env.add_template("base.html", BASE)?;
         env.add_template("index.html", INDEX)?;
         env.add_template("download.html", DOWNLOAD)?;

@@ -177,7 +177,10 @@ mod tests {
     fn embedded_catalog_loads() {
         let cat = Catalog::embedded().unwrap();
         assert_eq!(cat.get(Locale::En, "index.upload_heading"), "Upload a file");
-        assert_eq!(cat.get(Locale::Fr, "index.upload_heading"), "Envoyer un fichier");
+        assert_eq!(
+            cat.get(Locale::Fr, "index.upload_heading"),
+            "Envoyer un fichier"
+        );
     }
 
     #[test]
@@ -196,28 +199,18 @@ mod tests {
 
     #[test]
     fn cookie_overrides_accept_language() {
-        assert_eq!(
-            resolve_locale(Some("fr"), Some("en-US"), "en"),
-            Locale::Fr
-        );
+        assert_eq!(resolve_locale(Some("fr"), Some("en-US"), "en"), Locale::Fr);
     }
 
     #[test]
     fn invalid_cookie_ignored() {
-        assert_eq!(
-            resolve_locale(Some("de"), Some("en-US"), "en"),
-            Locale::En
-        );
+        assert_eq!(resolve_locale(Some("de"), Some("en-US"), "en"), Locale::En);
     }
 
     #[test]
     fn same_origin_referer_returns_referer() {
         assert_eq!(
-            safe_redirect_target(
-                "http://localhost:8080/foo",
-                "http://localhost:8080/",
-                "/"
-            ),
+            safe_redirect_target("http://localhost:8080/foo", "http://localhost:8080/", "/"),
             "http://localhost:8080/foo"
         );
     }
@@ -225,11 +218,7 @@ mod tests {
     #[test]
     fn cross_origin_referer_returns_root() {
         assert_eq!(
-            safe_redirect_target(
-                "https://evil.example/foo",
-                "http://localhost:8080/",
-                "/"
-            ),
+            safe_redirect_target("https://evil.example/foo", "http://localhost:8080/", "/"),
             "http://localhost:8080/"
         );
     }

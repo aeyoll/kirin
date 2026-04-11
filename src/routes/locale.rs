@@ -16,18 +16,12 @@ pub struct LocaleForm {
 }
 
 pub fn request_locale(cfg: &AppConfig, headers: &HeaderMap, jar: &CookieJar) -> Locale {
-    let cookie = jar
-        .get(LOCALE_COOKIE_NAME)
-        .map(|c| c.value().to_string());
+    let cookie = jar.get(LOCALE_COOKIE_NAME).map(|c| c.value().to_string());
     let accept = headers
         .get(axum::http::header::ACCEPT_LANGUAGE)
         .and_then(|v| v.to_str().ok())
         .map(str::to_string);
-    resolve_locale(
-        cookie.as_deref(),
-        accept.as_deref(),
-        &cfg.ui.default_locale,
-    )
+    resolve_locale(cookie.as_deref(), accept.as_deref(), &cfg.ui.default_locale)
 }
 
 pub fn tr_value(catalog: &Catalog, locale: Locale) -> minijinja::Value {

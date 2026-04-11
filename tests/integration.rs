@@ -105,11 +105,7 @@ async fn upload_download_delete_roundtrip() {
         .send()
         .await
         .expect("upload request");
-    assert!(
-        res.status().is_success(),
-        "upload status {}",
-        res.status()
-    );
+    assert!(res.status().is_success(), "upload status {}", res.status());
     let html = res.text().await.expect("upload body");
 
     let re = Regex::new(r"f/([A-Za-z0-9_-]+)\?d=([A-Za-z0-9_-]+)").unwrap();
@@ -208,7 +204,11 @@ async fn upload_complete_get_without_token_hides_delete_link() {
         .expect("link id in upload result");
 
     let complete_url = format!("{base}upload/complete/{link_id}");
-    let page = client.get(&complete_url).send().await.expect("complete get");
+    let page = client
+        .get(&complete_url)
+        .send()
+        .await
+        .expect("complete get");
     assert!(page.status().is_success());
     let body = page.text().await.expect("complete body");
 
@@ -333,7 +333,12 @@ async fn post_locale_sets_cookie_and_redirects_same_origin() {
         .await
         .unwrap();
     assert_eq!(res.status(), reqwest::StatusCode::SEE_OTHER);
-    let loc = res.headers().get(reqwest::header::LOCATION).unwrap().to_str().unwrap();
+    let loc = res
+        .headers()
+        .get(reqwest::header::LOCATION)
+        .unwrap()
+        .to_str()
+        .unwrap();
     assert_eq!(loc, format!("{base}admin"));
     let set_cookie = res.headers().get_all(reqwest::header::SET_COOKIE);
     let joined: String = set_cookie.iter().filter_map(|h| h.to_str().ok()).collect();
@@ -403,6 +408,13 @@ async fn default_locale_fr_without_cookie_or_accept_language() {
     });
     tokio::time::sleep(Duration::from_millis(80)).await;
     let client = reqwest::Client::new();
-    let body = client.get(&base).send().await.unwrap().text().await.unwrap();
+    let body = client
+        .get(&base)
+        .send()
+        .await
+        .unwrap()
+        .text()
+        .await
+        .unwrap();
     assert!(body.contains("lang=\"fr\""));
 }

@@ -29,7 +29,8 @@ pub fn expires_at_unix(now: i64, availability: &str) -> Option<i64> {
 }
 
 pub fn expires_at_datetime(now: i64, availability: &str) -> Option<DateTime<Utc>> {
-    expires_at_unix(now, availability).map(|u| DateTime::from_timestamp(u, 0).unwrap_or_else(Utc::now))
+    expires_at_unix(now, availability)
+        .map(|u| DateTime::from_timestamp(u, 0).unwrap_or_else(Utc::now))
 }
 
 #[cfg(test)]

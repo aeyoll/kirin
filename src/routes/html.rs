@@ -21,7 +21,15 @@ pub async fn index_get(
     let loc = request_locale(cfg, &headers, &jar);
     let tr = tr_value(&state.i18n, loc);
     let keys = [
-        "minute", "hour", "day", "week", "fortnight", "month", "quarter", "year", "none",
+        "minute",
+        "hour",
+        "day",
+        "week",
+        "fortnight",
+        "month",
+        "quarter",
+        "year",
+        "none",
     ];
     let mut opts = Vec::new();
     for k in keys {

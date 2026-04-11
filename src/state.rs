@@ -49,8 +49,7 @@ impl AppState {
     /// Build `exp_unix:payload` admin session token (payload constant `1` for simplicity).
     pub fn sign_admin_session(&self, exp_unix: i64) -> String {
         let payload = format!("{exp_unix}:1");
-        let mut mac = HmacSha256::new_from_slice(&self.signing_key)
-            .expect("HMAC key length"); // justified: key validated at startup
+        let mut mac = HmacSha256::new_from_slice(&self.signing_key).expect("HMAC key length"); // justified: key validated at startup
         mac.update(payload.as_bytes());
         let sig = hex::encode(mac.finalize().into_bytes());
         format!("{payload}:{sig}")
@@ -58,8 +57,7 @@ impl AppState {
 
     /// HMAC for `GET /upload/complete/{link_id}?v=…` so the delete URL is not inferable from `link_id` alone.
     pub fn sign_upload_complete_view(&self, link_id: &str, delete_code: &str) -> String {
-        let mut mac = HmacSha256::new_from_slice(&self.signing_key)
-            .expect("HMAC key length");
+        let mut mac = HmacSha256::new_from_slice(&self.signing_key).expect("HMAC key length");
         mac.update(UPLOAD_COMPLETE_MAC_LABEL);
         mac.update(link_id.as_bytes());
         mac.update(b"\0");
