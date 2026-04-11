@@ -1,0 +1,105 @@
+[common]
+language_label = "Language"
+back_home = "Back to home"
+try_again = "Try again"
+skip_main = "Skip to main content"
+admin_link = "Admin"
+back_upload = "Back to upload"
+
+[base]
+theme_toggle = "Theme"
+theme_dark = "Dark mode"
+theme_light = "Light mode"
+theme_aria_to_light = "Switch to light mode"
+theme_aria_to_dark = "Switch to dark mode"
+
+[index]
+upload_heading = "Upload a file"
+upload_lead = "Choose a file and how long the link should stay available."
+file_label = "File"
+file_drop = "Drop a file here or click to browse"
+file_hint = "Any file type up to your server limit"
+expires_after = "Expires after"
+one_time_label = "Delete file after first download"
+one_time_help = "The link stops working once someone downloads the file."
+download_password_optional = "Download password (optional)"
+upload_password = "Upload password"
+send_file = "Send file"
+
+[avail]
+minute = "One minute"
+hour = "One hour"
+day = "One day"
+week = "One week"
+fortnight = "Two weeks"
+month = "One month"
+quarter = "Three months"
+year = "One year"
+none = "Unlimited"
+
+[upload_result]
+page_title = "Upload complete"
+heading = "Upload complete"
+lead = "Share these links with people who need the file."
+your_file = "Your file:"
+download_page = "Download page"
+open_download_page = "Open download page"
+direct_download = "Direct download"
+direct_link = "Direct link"
+delete_link = "Delete link"
+remove_file = "Remove file"
+upload_another = "Upload another file"
+
+[download]
+password_gate_title = "Password required"
+password_gate_lead = "This file is protected. Enter the download password."
+one_time_notice = "This file will be deleted after the first successful download."
+password_label = "Password"
+download_button = "Download"
+preview_button = "Preview"
+size_label = "Size:"
+
+[delete_confirm]
+page_title = "Delete file"
+heading = "Confirm deletion"
+lead = "This action cannot be undone."
+delete_question_prefix = "Delete"
+delete_question_suffix = "?"
+delete_permanently = "Delete permanently"
+
+[delete_done]
+message = "File deleted."
+
+[file_unavailable]
+status_forbidden = "403 Forbidden"
+
+[download_errors]
+wrong_password_title = "Wrong password"
+wrong_password_body = "The password you entered is not correct. Ask the person who shared this link for the right password, then try again."
+data_requires_password_title = "Password required"
+data_requires_password_body = "This file is protected. Open the download page and enter the password there; the file cannot be fetched without it."
+not_found_title = "File not found"
+not_found_body = "This link is invalid, the file was deleted, or it is no longer stored here."
+expired_title = "This link has expired"
+expired_body = "Shared files here are temporary. Ask the sender for a new link, or upload a file from the home page."
+
+[admin]
+page_title = "Admin"
+heading = "Files"
+lead = "Manage uploaded links for this instance."
+logout = "Logout"
+table_link = "Link"
+table_name = "Name"
+table_size = "Size"
+table_expires = "Expires"
+table_actions = "Actions"
+delete_button = "Delete"
+login_page_title = "Admin login"
+login_heading = "Administration"
+login_lead = "Sign in with the admin password."
+admin_password_label = "Admin password"
+login_button = "Login"
+disabled_message = "Administration is disabled (no admin password configured)."
+invalid_password = "Invalid password."
+expires_never = "never"
+expires_unknown = "unknown"

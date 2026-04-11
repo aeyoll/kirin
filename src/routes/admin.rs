@@ -1,9 +1,10 @@
 use crate::error::AppError;
 use crate::password::verify_admin_password_hex;
 use crate::routes::common::{challenge_admin_ip, human_size, valid_link_id};
+use crate::routes::locale::{request_locale, tr_value};
 use crate::state::AppState;
 use axum::extract::{ConnectInfo, State};
-use axum::http::StatusCode;
+use axum::http::{HeaderMap, StatusCode};
 use axum::response::{IntoResponse, Redirect, Response};
 use axum_extra::extract::cookie::{Cookie, CookieJar, SameSite};
 use serde::Deserialize;
@@ -21,19 +22,24 @@ struct AdminRow {
 pub async fn admin_get(
     State(state): State<AppState>,
     ConnectInfo(addr): ConnectInfo<SocketAddr>,
+    headers: HeaderMap,
     jar: CookieJar,
 ) -> Result<Response, AppError> {
     let ip = addr.ip().to_string();
     if !challenge_admin_ip(&state.cfg.admin.allowed_admin_ips, &ip) {
         return Err(AppError::Forbidden);
     }
+    let loc = request_locale(&state.cfg, &headers, &jar);
+    let tr = tr_value(&state.i18n, loc);
     if state.cfg.admin.password_sha256_hex.is_empty() {
         let html = state
             .minijinja()
             .get_template("admin_login.html")
             .map_err(|_| AppError::Internal)?
             .render(minijinja::context! {
-                message => "Administration is disabled (no admin password configured).",
+                message => state.i18n.get(loc, "admin.disabled_message"),
+                locale => loc.as_str(),
+                tr => tr.clone(),
             })
             .map_err(|_| AppError::Internal)?;
         return Ok((StatusCode::OK, axum::response::Html(html)).into_response());
@@ -49,6 +55,8 @@ pub async fn admin_get(
             .map_err(|_| AppError::Internal)?
             .render(minijinja::context! {
                 message => Option::<String>::None,
+                locale => loc.as_str(),
+                tr => tr.clone(),
             })
             .map_err(|_| AppError::Internal)?;
         return Ok((StatusCode::OK, axum::response::Html(html)).into_response());
@@ -60,8 +68,8 @@ pub async fn admin_get(
             let exp = match m.expires_at_unix {
                 Some(t) => chrono::DateTime::from_timestamp(t, 0)
                     .map(|d| d.format("%Y-%m-%d %H:%M UTC").to_string())
-                    .unwrap_or_else(|| "unknown".into()),
-                None => "never".into(),
+                    .unwrap_or_else(|| state.i18n.get(loc, "admin.expires_unknown")),
+                None => state.i18n.get(loc, "admin.expires_never"),
             };
             rows.push(AdminRow {
                 link_id: m.link_id,
@@ -72,7 +80,11 @@ pub async fn admin_get(
         }
     }
     let rows_val = minijinja::Value::from_serialize(&rows);
-    let ctx = minijinja::context! { rows => rows_val };
+    let ctx = minijinja::context! {
+        rows => rows_val,
+        locale => loc.as_str(),
+        tr => tr,
+    };
     let html = state
         .minijinja()
         .get_template("admin.html")
@@ -90,6 +102,7 @@ pub struct AdminLoginForm {
 pub async fn admin_login(
     State(state): State<AppState>,
     ConnectInfo(addr): ConnectInfo<SocketAddr>,
+    headers: HeaderMap,
     jar: CookieJar,
     axum::Form(form): axum::Form<AdminLoginForm>,
 ) -> Result<Response, AppError> {
@@ -97,13 +110,17 @@ pub async fn admin_login(
     if !challenge_admin_ip(&state.cfg.admin.allowed_admin_ips, &ip) {
         return Err(AppError::Forbidden);
     }
+    let loc = request_locale(&state.cfg, &headers, &jar);
+    let tr = tr_value(&state.i18n, loc);
     if !verify_admin_password_hex(&state.cfg.admin.password_sha256_hex, &form.admin_password) {
         let html = state
             .minijinja()
             .get_template("admin_login.html")
             .map_err(|_| AppError::Internal)?
             .render(minijinja::context! {
-                message => "Invalid password.",
+                message => state.i18n.get(loc, "admin.invalid_password"),
+                locale => loc.as_str(),
+                tr => tr,
             })
             .map_err(|_| AppError::Internal)?;
         return Ok((StatusCode::UNAUTHORIZED, axum::response::Html(html)).into_response());

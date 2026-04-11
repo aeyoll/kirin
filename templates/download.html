@@ -5,14 +5,14 @@
 <div class="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm dark:border-slate-800 dark:bg-slate-900/50 dark:shadow-none">
   <form method="post" action="/f/{{ link_id }}?d=1" id="pw-form" enctype="multipart/form-data" class="space-y-6">
     <div>
-      <h1 class="text-xl font-semibold text-slate-900 dark:text-white">Password required</h1>
-      <p class="mt-2 text-sm text-slate-600 dark:text-slate-400">This file is protected. Enter the download password.</p>
+      <h1 class="text-xl font-semibold text-slate-900 dark:text-white">{{ tr["download.password_gate_title"] }}</h1>
+      <p class="mt-2 text-sm text-slate-600 dark:text-slate-400">{{ tr["download.password_gate_lead"] }}</p>
     </div>
     {% if one_time %}
-    <p class="rounded-lg border border-slate-200 bg-slate-50/80 px-4 py-3 text-sm text-slate-800 dark:border-slate-700 dark:bg-slate-800/40 dark:text-slate-200">This file will be deleted after the first successful download.</p>
+    <p class="rounded-lg border border-slate-200 bg-slate-50/80 px-4 py-3 text-sm text-slate-800 dark:border-slate-700 dark:bg-slate-800/40 dark:text-slate-200">{{ tr["download.one_time_notice"] }}</p>
     {% endif %}
     <div>
-      <label for="key" class="mb-2 block text-sm font-medium text-slate-700 dark:text-slate-300">Password</label>
+      <label for="key" class="mb-2 block text-sm font-medium text-slate-700 dark:text-slate-300">{{ tr["download.password_label"] }}</label>
       <input
         type="password"
         name="key"
@@ -25,26 +25,26 @@
     <button
       type="submit"
       class="inline-flex items-center justify-center rounded-lg bg-indigo-600 px-5 py-2.5 text-sm font-semibold text-white shadow-sm transition hover:bg-indigo-500 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2 dark:bg-indigo-500 dark:hover:bg-indigo-400 dark:focus:ring-offset-slate-950"
-    >Download</button>
+    >{{ tr["download.download_button"] }}</button>
   </form>
 </div>
 {% else %}
 <div class="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm dark:border-slate-800 dark:bg-slate-900/50 dark:shadow-none">
   <h1 class="text-xl font-semibold text-slate-900 dark:text-white">{{ original_name }}</h1>
-  <p class="mt-2 text-sm text-slate-600 dark:text-slate-400">Size: {{ size_human }}</p>
+  <p class="mt-2 text-sm text-slate-600 dark:text-slate-400">{{ tr["download.size_label"] }} {{ size_human }}</p>
   {% if one_time %}
-  <p class="mt-4 rounded-lg border border-slate-200 bg-slate-50/80 px-4 py-3 text-sm text-slate-800 dark:border-slate-700 dark:bg-slate-800/40 dark:text-slate-200">This file will be deleted after the first successful download.</p>
+  <p class="mt-4 rounded-lg border border-slate-200 bg-slate-50/80 px-4 py-3 text-sm text-slate-800 dark:border-slate-700 dark:bg-slate-800/40 dark:text-slate-200">{{ tr["download.one_time_notice"] }}</p>
   {% endif %}
   <div class="mt-8 flex flex-wrap gap-3">
     <a
       href="/f/{{ link_id }}?d=1"
       class="inline-flex items-center justify-center rounded-lg bg-indigo-600 px-5 py-2.5 text-sm font-semibold text-white shadow-sm transition hover:bg-indigo-500 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2 dark:bg-indigo-500 dark:hover:bg-indigo-400 dark:focus:ring-offset-slate-950"
-    >Download</a>
+    >{{ tr["download.download_button"] }}</a>
     {% if preview %}
     <a
       href="/f/{{ link_id }}?p=1"
       class="inline-flex items-center justify-center rounded-lg border border-slate-300 bg-white px-5 py-2.5 text-sm font-semibold text-slate-700 shadow-sm transition hover:bg-slate-50 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2 dark:border-slate-600 dark:bg-slate-800 dark:text-slate-200 dark:hover:bg-slate-700 dark:focus:ring-offset-slate-950"
-    >Preview</a>
+    >{{ tr["download.preview_button"] }}</a>
     {% endif %}
   </div>
 </div>

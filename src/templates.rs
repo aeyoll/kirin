@@ -27,6 +27,8 @@ impl TemplateEngine {
             env!("CARGO_MANIFEST_DIR"),
             "/templates/download_forbidden.html"
         ));
+        const DELETE_DONE: &str =
+            include_str!(concat!(env!("CARGO_MANIFEST_DIR"), "/templates/delete_done.html"));
         env.add_template("base.html", BASE)?;
         env.add_template("index.html", INDEX)?;
         env.add_template("download.html", DOWNLOAD)?;
@@ -36,6 +38,7 @@ impl TemplateEngine {
         env.add_template("upload_result.html", UPLOAD_RESULT)?;
         env.add_template("file_unavailable.html", FILE_UNAVAILABLE)?;
         env.add_template("download_forbidden.html", DOWNLOAD_FORBIDDEN)?;
+        env.add_template("delete_done.html", DELETE_DONE)?;
         Ok(Self {
             inner: Arc::new(env),
         })

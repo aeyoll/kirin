@@ -51,3 +51,4 @@ allowed_admin_ips = []
 [ui]
 title = "Kirin"
 organisation = ""
+default_locale = "en"

@@ -1,4 +1,5 @@
 use crate::config::AppConfig;
+use crate::i18n::Catalog;
 use crate::models::AsyncUploadSession;
 use crate::storage::DynStorage;
 use crate::templates::TemplateEngine;
@@ -16,6 +17,7 @@ pub struct AppState {
     pub cfg: Arc<AppConfig>,
     pub storage: DynStorage,
     pub jinja: Arc<TemplateEngine>,
+    pub i18n: Arc<Catalog>,
     pub async_sessions: Arc<Mutex<HashMap<String, AsyncUploadSession>>>,
     signing_key: Arc<[u8]>,
 }
@@ -25,12 +27,14 @@ impl AppState {
         cfg: Arc<AppConfig>,
         storage: DynStorage,
         jinja: Arc<TemplateEngine>,
+        i18n: Arc<Catalog>,
         signing_key: Vec<u8>,
     ) -> Self {
         Self {
             cfg,
             storage,
             jinja,
+            i18n,
             async_sessions: Arc::new(Mutex::new(HashMap::new())),
             signing_key: signing_key.into(),
         }

@@ -1,14 +1,17 @@
 use crate::error::AppError;
+use crate::i18n::Locale;
 use crate::models::FileMeta;
 use crate::password::verify_download_password;
 use crate::routes::common::{content_disposition, human_size, valid_link_id};
+use crate::routes::locale::{request_locale, tr_value};
 use crate::state::AppState;
 use crate::storage::DynStorage;
 use axum::body::Body;
 use axum::extract::{Path, Query, State};
 use axum::http::header;
-use axum::http::StatusCode;
+use axum::http::{HeaderMap, StatusCode};
 use axum::response::{Html, IntoResponse, Response};
+use axum_extra::extract::cookie::CookieJar;
 use bytes::Bytes;
 use futures_util::Stream;
 use serde::Deserialize;
@@ -43,30 +46,37 @@ async fn render_download_forbidden(
     state: &AppState,
     link_id: &str,
     reason: DownloadForbiddenReason,
+    loc: Locale,
 ) -> Result<Response, AppError> {
-    let (headline, description) = match reason {
+    let (hk, dk) = match reason {
         DownloadForbiddenReason::WrongPassword => (
-            "Wrong password",
-            "The password you entered is not correct. Ask the person who shared this link for the right password, then try again.",
+            "download_errors.wrong_password_title",
+            "download_errors.wrong_password_body",
         ),
         DownloadForbiddenReason::DataRequiresPassword => (
-            "Password required",
-            "This file is protected. Open the download page and enter the password there; the file cannot be fetched without it.",
+            "download_errors.data_requires_password_title",
+            "download_errors.data_requires_password_body",
         ),
     };
+    let headline = state.i18n.get(loc, hk);
+    let description = state.i18n.get(loc, dk);
     let site_title = state.cfg.ui.title.clone();
     let organisation = state.cfg.ui.organisation.clone();
-    let page_title = format!("403 Forbidden - {site_title}");
+    let status_line = state.i18n.get(loc, "file_unavailable.status_forbidden");
+    let page_title = format!("{status_line} - {site_title}");
+    let tr = tr_value(&state.i18n, loc);
     let ctx = minijinja::context! {
         page_title => page_title,
         site_title => site_title,
         organisation => organisation,
-        status_code => "403 Forbidden",
+        status_code => status_line,
         headline => headline,
         description => description,
         link_id => link_id,
-        retry_action_label => "Try again",
-        home_action_label => "Back to home",
+        retry_action_label => state.i18n.get(loc, "common.try_again"),
+        home_action_label => state.i18n.get(loc, "common.back_home"),
+        locale => loc.as_str(),
+        tr => tr,
     };
     let html = state
         .minijinja()
@@ -80,24 +90,28 @@ async fn render_download_forbidden(
 async fn render_file_unavailable(
     state: &AppState,
     kind: FileUnavailableKind,
+    loc: Locale,
 ) -> Result<Response, AppError> {
-    let (status, status_u16, headline, description) = match kind {
+    let (status, status_u16, hk, dk) = match kind {
         FileUnavailableKind::Missing => (
             StatusCode::NOT_FOUND,
             404u16,
-            "File not found",
-            "This link is invalid, the file was deleted, or it is no longer stored here.",
+            "download_errors.not_found_title",
+            "download_errors.not_found_body",
         ),
         FileUnavailableKind::Expired => (
             StatusCode::GONE,
             410u16,
-            "This link has expired",
-            "Shared files here are temporary. Ask the sender for a new link, or upload a file from the home page.",
+            "download_errors.expired_title",
+            "download_errors.expired_body",
         ),
     };
+    let headline = state.i18n.get(loc, hk);
+    let description = state.i18n.get(loc, dk);
     let site_title = state.cfg.ui.title.clone();
     let organisation = state.cfg.ui.organisation.clone();
     let page_title = format!("{headline} - {site_title}");
+    let tr = tr_value(&state.i18n, loc);
     let ctx = minijinja::context! {
         page_title => page_title,
         site_title => site_title,
@@ -105,7 +119,9 @@ async fn render_file_unavailable(
         status_code => status_u16.to_string(),
         headline => headline,
         description => description,
-        home_action_label => "Back to home",
+        home_action_label => state.i18n.get(loc, "common.back_home"),
+        locale => loc.as_str(),
+        tr => tr,
     };
     let html = state
         .minijinja()
@@ -123,11 +139,12 @@ async fn stream_blob_or_unavailable(
     meta: &FileMeta,
     inline: bool,
     one_time: bool,
+    loc: Locale,
 ) -> Result<Response, AppError> {
     match stream_blob(storage, path, meta, inline, one_time).await {
         Ok(r) => Ok(r),
         Err(AppError::NotFound) => {
-            render_file_unavailable(state, FileUnavailableKind::Missing).await
+            render_file_unavailable(state, FileUnavailableKind::Missing, loc).await
         }
         Err(e) => Err(e),
     }
@@ -137,30 +154,33 @@ pub async fn download_get(
     State(state): State<AppState>,
     Path(link_id): Path<String>,
     Query(q): Query<DownloadQuery>,
+    headers: HeaderMap,
+    jar: CookieJar,
 ) -> Result<Response, AppError> {
+    let loc = request_locale(&state.cfg, &headers, &jar);
     if !valid_link_id(&link_id) {
-        return render_file_unavailable(&state, FileUnavailableKind::Missing).await;
+        return render_file_unavailable(&state, FileUnavailableKind::Missing, loc).await;
     }
     let meta = match state.storage.read_meta(&link_id).await? {
         Some(m) => m,
-        None => return render_file_unavailable(&state, FileUnavailableKind::Missing).await,
+        None => return render_file_unavailable(&state, FileUnavailableKind::Missing, loc).await,
     };
     let now = chrono::Utc::now().timestamp();
     if meta.is_expired(now) {
         let _ = state.storage.delete_link(&link_id).await;
-        return render_file_unavailable(&state, FileUnavailableKind::Expired).await;
+        return render_file_unavailable(&state, FileUnavailableKind::Expired, loc).await;
     }
 
     if let Some(ref dc) = q.d {
         if dc != "1" && !dc.is_empty() {
-            return delete_flow_get(&state, &link_id, &meta, dc).await;
+            return delete_flow_get(&state, &link_id, &meta, dc, loc).await;
         }
     }
 
     let blob = match state.storage.open_blob_path(&link_id).await {
         Ok(p) => p,
         Err(AppError::NotFound) => {
-            return render_file_unavailable(&state, FileUnavailableKind::Missing).await;
+            return render_file_unavailable(&state, FileUnavailableKind::Missing, loc).await;
         }
         Err(e) => return Err(e),
     };
@@ -174,6 +194,7 @@ pub async fn download_get(
                 &state,
                 &link_id,
                 DownloadForbiddenReason::DataRequiresPassword,
+                loc,
             )
             .await;
         }
@@ -184,31 +205,35 @@ pub async fn download_get(
             &meta,
             inline,
             meta.one_time,
+            loc,
         )
         .await;
     }
 
     let need_password = meta.download_password_hash.is_some();
-    render_download_page(&state, &meta, &link_id, need_password).await
+    render_download_page(&state, &meta, &link_id, need_password, loc).await
 }
 
 pub async fn download_post(
     State(state): State<AppState>,
     Path(link_id): Path<String>,
     Query(q): Query<DownloadQuery>,
+    headers: HeaderMap,
+    jar: CookieJar,
     mut multipart: axum::extract::Multipart,
 ) -> Result<Response, AppError> {
+    let loc = request_locale(&state.cfg, &headers, &jar);
     if !valid_link_id(&link_id) {
-        return render_file_unavailable(&state, FileUnavailableKind::Missing).await;
+        return render_file_unavailable(&state, FileUnavailableKind::Missing, loc).await;
     }
     let meta = match state.storage.read_meta(&link_id).await? {
         Some(m) => m,
-        None => return render_file_unavailable(&state, FileUnavailableKind::Missing).await,
+        None => return render_file_unavailable(&state, FileUnavailableKind::Missing, loc).await,
     };
     let now = chrono::Utc::now().timestamp();
     if meta.is_expired(now) {
         let _ = state.storage.delete_link(&link_id).await;
-        return render_file_unavailable(&state, FileUnavailableKind::Expired).await;
+        return render_file_unavailable(&state, FileUnavailableKind::Expired, loc).await;
     }
 
     if let Some(ref dc) = q.d {
@@ -232,17 +257,26 @@ pub async fn download_post(
             }
             if confirm {
                 let _ = state.storage.delete_link(&link_id).await;
-                let html = "<!DOCTYPE html><html><body><p>File deleted.</p></body></html>";
-                return Ok(Html(html.to_string()).into_response());
+                let tr = tr_value(&state.i18n, loc);
+                let html = state
+                    .minijinja()
+                    .get_template("delete_done.html")
+                    .map_err(|_| AppError::Internal)?
+                    .render(minijinja::context! {
+                        tr => tr,
+                        locale => loc.as_str(),
+                    })
+                    .map_err(|_| AppError::Internal)?;
+                return Ok(Html(html).into_response());
             }
-            return delete_flow_get(&state, &link_id, &meta, dc).await;
+            return delete_flow_get(&state, &link_id, &meta, dc, loc).await;
         }
     }
 
     let blob = match state.storage.open_blob_path(&link_id).await {
         Ok(p) => p,
         Err(AppError::NotFound) => {
-            return render_file_unavailable(&state, FileUnavailableKind::Missing).await;
+            return render_file_unavailable(&state, FileUnavailableKind::Missing, loc).await;
         }
         Err(e) => return Err(e),
     };
@@ -270,6 +304,7 @@ pub async fn download_post(
                     &state,
                     &link_id,
                     DownloadForbiddenReason::WrongPassword,
+                    loc,
                 )
                 .await;
             }
@@ -281,12 +316,13 @@ pub async fn download_post(
             &meta,
             inline,
             meta.one_time,
+            loc,
         )
         .await;
     }
 
     let need_password = meta.download_password_hash.is_some();
-    render_download_page(&state, &meta, &link_id, need_password).await
+    render_download_page(&state, &meta, &link_id, need_password, loc).await
 }
 
 async fn delete_flow_get(
@@ -294,15 +330,19 @@ async fn delete_flow_get(
     link_id: &str,
     meta: &FileMeta,
     delete_code: &str,
+    loc: Locale,
 ) -> Result<Response, AppError> {
     if meta.delete_code != delete_code {
         return Err(AppError::Forbidden);
     }
+    let tr = tr_value(&state.i18n, loc);
     let ctx = minijinja::context! {
         link_id => link_id,
         delete_code => delete_code,
         original_name => meta.original_name,
         size_human => human_size(meta.size),
+        locale => loc.as_str(),
+        tr => tr,
     };
     let html = state
         .minijinja()
@@ -318,8 +358,10 @@ async fn render_download_page(
     meta: &FileMeta,
     link_id: &str,
     need_password: bool,
+    loc: Locale,
 ) -> Result<Response, AppError> {
     let preview = state.cfg.features.preview && is_previewable(&meta.mime_type);
+    let tr = tr_value(&state.i18n, loc);
     let ctx = minijinja::context! {
         title => meta.original_name.clone(),
         need_password => need_password,
@@ -328,6 +370,8 @@ async fn render_download_page(
         size_human => human_size(meta.size),
         one_time => meta.one_time,
         preview => preview,
+        locale => loc.as_str(),
+        tr => tr,
     };
     let html = state
         .minijinja()

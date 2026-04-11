@@ -3,9 +3,12 @@ use crate::expiry::expires_at_unix;
 use crate::models::FileMeta;
 use crate::password::hash_download_password;
 use crate::routes::common::{challenge_upload, gen_delete_code, gen_link_id};
+use crate::routes::locale::{request_locale, tr_value};
 use crate::state::AppState;
 use axum::extract::{ConnectInfo, Multipart, State};
+use axum::http::HeaderMap;
 use axum::response::{Html, IntoResponse, Response};
+use axum_extra::extract::cookie::CookieJar;
 use blake3::Hasher;
 use std::collections::HashMap;
 use std::net::SocketAddr;
@@ -16,17 +19,23 @@ use tokio::io::AsyncWriteExt;
 pub async fn upload_multipart(
     State(state): State<AppState>,
     ConnectInfo(addr): ConnectInfo<SocketAddr>,
+    headers: HeaderMap,
+    jar: CookieJar,
     multipart: Multipart,
 ) -> Result<Response, AppError> {
     let ip = addr.ip().to_string();
     let res = process_multipart(&state, multipart, &ip).await?;
     let cfg = &state.cfg;
+    let loc = request_locale(cfg, &headers, &jar);
+    let tr = tr_value(&state.i18n, loc);
     let base = cfg.public_base_url_normalized();
     let ctx = minijinja::context! {
         original_name => res.original_name,
         download_page => format!("{}f/{}", base, res.link_id),
         direct_download => format!("{}f/{}?d=1", base, res.link_id),
         delete_link => format!("{}f/{}?d={}", base, res.link_id, res.delete_code),
+        locale => loc.as_str(),
+        tr => tr,
     };
     let html = state
         .minijinja()

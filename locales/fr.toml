@@ -1,0 +1,105 @@
+[common]
+language_label = "Langue"
+back_home = "Retour à l'accueil"
+try_again = "Réessayer"
+skip_main = "Aller au contenu principal"
+admin_link = "Administration"
+back_upload = "Retour à l'envoi"
+
+[base]
+theme_toggle = "Thème"
+theme_dark = "Mode sombre"
+theme_light = "Mode clair"
+theme_aria_to_light = "Passer en mode clair"
+theme_aria_to_dark = "Passer en mode sombre"
+
+[index]
+upload_heading = "Envoyer un fichier"
+upload_lead = "Choisissez un fichier et la durée de disponibilité du lien."
+file_label = "Fichier"
+file_drop = "Déposez un fichier ici ou cliquez pour parcourir"
+file_hint = "Tout type de fichier, dans la limite du serveur"
+expires_after = "Expire après"
+one_time_label = "Supprimer le fichier après le premier téléchargement"
+one_time_help = "Le lien cesse de fonctionner dès que quelqu'un télécharge le fichier."
+download_password_optional = "Mot de passe de téléchargement (facultatif)"
+upload_password = "Mot de passe d'envoi"
+send_file = "Envoyer le fichier"
+
+[avail]
+minute = "Une minute"
+hour = "Une heure"
+day = "Un jour"
+week = "Une semaine"
+fortnight = "Deux semaines"
+month = "Un mois"
+quarter = "Trois mois"
+year = "Un an"
+none = "Illimité"
+
+[upload_result]
+page_title = "Envoi terminé"
+heading = "Envoi terminé"
+lead = "Partagez ces liens avec les personnes qui ont besoin du fichier."
+your_file = "Votre fichier :"
+download_page = "Page de téléchargement"
+open_download_page = "Ouvrir la page de téléchargement"
+direct_download = "Téléchargement direct"
+direct_link = "Lien direct"
+delete_link = "Lien de suppression"
+remove_file = "Supprimer le fichier"
+upload_another = "Envoyer un autre fichier"
+
+[download]
+password_gate_title = "Mot de passe requis"
+password_gate_lead = "Ce fichier est protégé. Saisissez le mot de passe de téléchargement."
+one_time_notice = "Ce fichier sera supprimé après le premier téléchargement réussi."
+password_label = "Mot de passe"
+download_button = "Télécharger"
+preview_button = "Aperçu"
+size_label = "Taille :"
+
+[delete_confirm]
+page_title = "Supprimer le fichier"
+heading = "Confirmer la suppression"
+lead = "Cette action est irréversible."
+delete_question_prefix = "Supprimer"
+delete_question_suffix = " ?"
+delete_permanently = "Supprimer définitivement"
+
+[delete_done]
+message = "Fichier supprimé."
+
+[file_unavailable]
+status_forbidden = "403 Interdit"
+
+[download_errors]
+wrong_password_title = "Mot de passe incorrect"
+wrong_password_body = "Le mot de passe saisi est incorrect. Demandez le bon mot de passe à la personne qui a partagé ce lien, puis réessayez."
+data_requires_password_title = "Mot de passe requis"
+data_requires_password_body = "Ce fichier est protégé. Ouvrez la page de téléchargement et saisissez-y le mot de passe ; le fichier ne peut pas être récupéré sans lui."
+not_found_title = "Fichier introuvable"
+not_found_body = "Ce lien n'est pas valide, le fichier a été supprimé ou n'est plus stocké ici."
+expired_title = "Ce lien a expiré"
+expired_body = "Les fichiers partagés ici sont temporaires. Demandez un nouveau lien à l'expéditeur, ou envoyez un fichier depuis la page d'accueil."
+
+[admin]
+page_title = "Administration"
+heading = "Fichiers"
+lead = "Gérez les liens envoyés pour cette instance."
+logout = "Déconnexion"
+table_link = "Lien"
+table_name = "Nom"
+table_size = "Taille"
+table_expires = "Expiration"
+table_actions = "Actions"
+delete_button = "Supprimer"
+login_page_title = "Connexion admin"
+login_heading = "Administration"
+login_lead = "Connectez-vous avec le mot de passe administrateur."
+admin_password_label = "Mot de passe administrateur"
+login_button = "Connexion"
+disabled_message = "L'administration est désactivée (aucun mot de passe administrateur configuré)."
+invalid_password = "Mot de passe incorrect."
+expires_never = "jamais"
+expires_unknown = "inconnu"

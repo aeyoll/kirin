@@ -161,10 +161,16 @@ pub struct UiSection {
     pub title: String,
     #[serde(default)]
     pub organisation: String,
+    #[serde(default = "default_ui_locale")]
+    pub default_locale: String,
 }
 
 fn default_title() -> String {
     "Kirin".into()
+}
+
+fn default_ui_locale() -> String {
+    "en".into()
 }
 
 impl Default for UiSection {
@@ -172,6 +178,7 @@ impl Default for UiSection {
         Self {
             title: default_title(),
             organisation: String::new(),
+            default_locale: default_ui_locale(),
         }
     }
 }
@@ -192,6 +199,9 @@ impl AppConfig {
             && self.admin.session_signing_key_hex.len() != 64
         {
             anyhow::bail!("admin.session_signing_key_hex must be 64 hex chars when set");
+        }
+        if self.ui.default_locale != "en" && self.ui.default_locale != "fr" {
+            anyhow::bail!("ui.default_locale must be \"en\" or \"fr\"");
         }
         Ok(())
     }
@@ -221,5 +231,37 @@ impl AppConfig {
             "none" => self.availabilities.none,
             _ => false,
         }
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn rejects_invalid_default_locale() {
+        let raw = r#"
+[server]
+bind = "127.0.0.1:8080"
+public_base_url = "http://127.0.0.1/"
+data_dir = "/tmp"
+
+[limits]
+
+[upload_auth]
+
+[availabilities]
+
+[features]
+
+[admin]
+
+[ui]
+title = "x"
+organisation = ""
+default_locale = "de"
+"#;
+        let cfg = toml::from_str::<AppConfig>(raw).unwrap();
+        assert!(cfg.validate().is_err());
     }
 }

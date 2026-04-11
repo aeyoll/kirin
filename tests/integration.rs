@@ -51,6 +51,7 @@ allowed_admin_ips = []
 [ui]
 title = "Test"
 organisation = ""
+default_locale = "en"
 "#,
         data_dir.display()
     )
@@ -145,7 +146,7 @@ async fn upload_download_delete_roundtrip() {
     assert_eq!(gone.status(), reqwest::StatusCode::NOT_FOUND);
     let gone_html = gone.text().await.expect("after delete body");
     assert!(
-        gone_html.contains("File not found"),
+        gone_html.contains("File not found") || gone_html.contains("Fichier introuvable"),
         "expected HTML unavailable page, got: {}",
         &gone_html[..gone_html.len().min(200)]
     );
@@ -222,12 +223,120 @@ async fn download_wrong_password_returns_403_html() {
     );
     let body = denied.text().await.expect("403 body");
     assert!(
-        body.contains("Wrong password"),
+        body.contains("Wrong password") || body.contains("Mot de passe incorrect"),
         "expected HTML forbidden page, got: {}",
         &body[..body.len().min(300)]
     );
     assert!(
-        body.contains("Try again") && body.contains(&format!("/f/{link_id}")),
+        (body.contains("Try again") || body.contains("Réessayer"))
+            && body.contains(&format!("/f/{link_id}")),
         "expected retry link to download page"
     );
+}
+
+#[tokio::test]
+async fn post_locale_sets_cookie_and_redirects_same_origin() {
+    let tmp = TempDir::new().unwrap();
+    let data = tmp.path().join("data");
+    std::fs::create_dir_all(&data).unwrap();
+    let listener = TcpListener::bind("127.0.0.1:0").await.unwrap();
+    let port = listener.local_addr().unwrap().port();
+    let base = format!("http://127.0.0.1:{port}/");
+    let cfg_path = tmp.path().join("config.toml");
+    std::fs::write(&cfg_path, config_toml(&data, &base)).unwrap();
+    let cfg = Arc::new(AppConfig::load_path(&cfg_path).unwrap());
+    let app = create_app(cfg).unwrap();
+    tokio::spawn(async move {
+        axum::serve(
+            listener,
+            app.into_make_service_with_connect_info::<SocketAddr>(),
+        )
+        .await
+        .expect("server");
+    });
+    tokio::time::sleep(Duration::from_millis(80)).await;
+    let client = reqwest::Client::builder()
+        .redirect(reqwest::redirect::Policy::none())
+        .build()
+        .unwrap();
+    let res = client
+        .post(format!("{base}locale"))
+        .header("Referer", format!("{base}admin"))
+        .form(&[("locale", "fr")])
+        .send()
+        .await
+        .unwrap();
+    assert_eq!(res.status(), reqwest::StatusCode::SEE_OTHER);
+    let loc = res.headers().get(reqwest::header::LOCATION).unwrap().to_str().unwrap();
+    assert_eq!(loc, format!("{base}admin"));
+    let set_cookie = res.headers().get_all(reqwest::header::SET_COOKIE);
+    let joined: String = set_cookie.iter().filter_map(|h| h.to_str().ok()).collect();
+    assert!(
+        joined.contains("kirin_locale=fr"),
+        "set-cookie headers: {:?}",
+        joined
+    );
+}
+
+#[tokio::test]
+async fn index_french_when_cookie_fr() {
+    let tmp = TempDir::new().unwrap();
+    let data = tmp.path().join("data");
+    std::fs::create_dir_all(&data).unwrap();
+    let listener = TcpListener::bind("127.0.0.1:0").await.unwrap();
+    let port = listener.local_addr().unwrap().port();
+    let base = format!("http://127.0.0.1:{port}/");
+    let cfg_path = tmp.path().join("config.toml");
+    std::fs::write(&cfg_path, config_toml(&data, &base)).unwrap();
+    let cfg = Arc::new(AppConfig::load_path(&cfg_path).unwrap());
+    let app = create_app(cfg).unwrap();
+    tokio::spawn(async move {
+        axum::serve(
+            listener,
+            app.into_make_service_with_connect_info::<SocketAddr>(),
+        )
+        .await
+        .expect("server");
+    });
+    tokio::time::sleep(Duration::from_millis(80)).await;
+    let client = reqwest::Client::new();
+    let body = client
+        .get(&base)
+        .header(reqwest::header::COOKIE, "kirin_locale=fr")
+        .send()
+        .await
+        .unwrap()
+        .text()
+        .await
+        .unwrap();
+    assert!(body.contains("lang=\"fr\""));
+    assert!(body.contains("Envoyer un fichier"));
+}
+
+#[tokio::test]
+async fn default_locale_fr_without_cookie_or_accept_language() {
+    let tmp = TempDir::new().unwrap();
+    let data = tmp.path().join("data");
+    std::fs::create_dir_all(&data).unwrap();
+    let listener = TcpListener::bind("127.0.0.1:0").await.unwrap();
+    let port = listener.local_addr().unwrap().port();
+    let base = format!("http://127.0.0.1:{port}/");
+    let mut toml = config_toml(&data, &base);
+    toml = toml.replace("default_locale = \"en\"", "default_locale = \"fr\"");
+    let cfg_path = tmp.path().join("config.toml");
+    std::fs::write(&cfg_path, toml).unwrap();
+    let cfg = Arc::new(AppConfig::load_path(&cfg_path).unwrap());
+    let app = create_app(cfg).unwrap();
+    tokio::spawn(async move {
+        axum::serve(
+            listener,
+            app.into_make_service_with_connect_info::<SocketAddr>(),
+        )
+        .await
+        .expect("server");
+    });
+    tokio::time::sleep(Duration::from_millis(80)).await;
+    let client = reqwest::Client::new();
+    let body = client.get(&base).send().await.unwrap().text().await.unwrap();
+    assert!(body.contains("lang=\"fr\""));
 }
