@@ -7,6 +7,7 @@ pub mod models;
 pub mod password;
 pub mod routes;
 pub mod state;
+pub mod static_assets;
 pub mod storage;
 pub mod templates;
 

@@ -5,6 +5,7 @@ use crate::routes::{
     upload_multipart,
 };
 use crate::state::AppState;
+use crate::static_assets::static_get;
 use crate::storage::{DynStorage, LocalFsStorage};
 use crate::templates::TemplateEngine;
 use axum::extract::DefaultBodyLimit;
@@ -15,7 +16,6 @@ use std::sync::Arc;
 use tower_cookies::CookieManagerLayer;
 use tower_http::compression::CompressionLayer;
 use tower_http::limit::RequestBodyLimitLayer;
-use tower_http::services::ServeDir;
 use tower_http::trace::TraceLayer;
 
 pub fn create_app(cfg: Arc<AppConfig>) -> anyhow::Result<Router> {
@@ -45,7 +45,6 @@ pub fn create_app(cfg: Arc<AppConfig>) -> anyhow::Result<Router> {
         (cfg.server.max_body_mb as usize).saturating_mul(1024 * 1024)
     };
 
-    let static_dir = std::path::PathBuf::from(env!("CARGO_MANIFEST_DIR")).join("static");
     let router = Router::new()
         .route("/", get(index_get))
         .route("/locale", post(locale_post))
@@ -66,7 +65,7 @@ pub fn create_app(cfg: Arc<AppConfig>) -> anyhow::Result<Router> {
         .route("/admin/login", post(admin_login))
         .route("/admin/logout", post(admin_logout))
         .route("/admin/delete", post(admin_delete))
-        .nest_service("/static", ServeDir::new(static_dir))
+        .route("/static/{*path}", get(static_get))
         .layer(CookieManagerLayer::new())
         .layer(CompressionLayer::new())
         .layer(TraceLayer::new_for_http())
