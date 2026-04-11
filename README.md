@@ -1,6 +1,6 @@
 # Kirin (Jirafeau-style file sharing)
 
-Rust service modeled after [Jirafeau](https://gitlab.com/jirafeau/Jirafeau). The PHP reference clone lives in `Jirafeau/` in this repository.
+Rust service modeled after [Jirafeau](https://gitlab.com/jirafeau/Jirafeau).
 
 ## Run
 
