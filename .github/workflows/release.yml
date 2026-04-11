@@ -1,0 +1,75 @@
+name: Release
+
+on:
+  push:
+    tags:
+      - '*'
+
+permissions:
+  contents: write
+
+jobs:
+  build-linux:
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - target: x86_64-unknown-linux-gnu
+            os: ubuntu-latest
+          - target: x86_64-unknown-linux-musl
+            os: ubuntu-latest
+    runs-on: ${{ matrix.os }}
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Install Rust
+        uses: dtolnay/rust-toolchain@stable
+        with:
+          targets: ${{ matrix.target }}
+
+      - name: Extract version
+        run: echo "VERSION=${GITHUB_REF#refs/*/}" >> "$GITHUB_ENV"
+
+      - name: Install cross-compilation toolchain
+        uses: taiki-e/setup-cross-toolchain-action@v1
+        with:
+          target: ${{ matrix.target }}
+        if: matrix.os == 'ubuntu-latest'
+
+      - name: Build release binary
+        run: cargo build --release --locked --target ${{ matrix.target }}
+
+      - name: Package binary
+        env:
+          TARGET: ${{ matrix.target }}
+        run: |
+          strip "target/${TARGET}/release/kirin"
+          mkdir -p pack
+          cp "target/${TARGET}/release/kirin" pack/kirin
+          tar -C pack -czvf "kirin-${VERSION}-${TARGET}.tar.gz" kirin
+
+      - name: Upload tarball
+        uses: actions/upload-artifact@v4
+        with:
+          name: kirin-${{ matrix.target }}
+          path: kirin-${{ env.VERSION }}-${{ matrix.target }}.tar.gz
+
+  publish:
+    needs: build-linux
+    runs-on: ubuntu-latest
+    steps:
+      - name: Download tarballs
+        uses: actions/download-artifact@v4
+        with:
+          pattern: '*'
+          merge-multiple: true
+          path: release-assets
+
+      - name: Create GitHub release
+        uses: softprops/action-gh-release@v2
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          files: release-assets/*.tar.gz
+          generate_release_notes: true
