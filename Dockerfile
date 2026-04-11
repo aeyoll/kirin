@@ -2,6 +2,7 @@
 
 FROM rust:1-bookworm AS builder
 WORKDIR /app
+COPY build.rs ./build.rs
 COPY Cargo.toml Cargo.lock ./
 COPY src ./src
 COPY locales ./locales

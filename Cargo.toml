@@ -6,6 +6,10 @@ description = "Rust reimplementation of Jirafeau-style ephemeral file sharing"
 license = "AGPL-3.0-or-later"
 readme = "README.md"
 
+[build-dependencies]
+hex = "0.4.3"
+sha2 = "0.10.8"
+
 [dependencies]
 anyhow = "1.0.95"
 argon2 = { version = "0.5.3", features = ["std"] }

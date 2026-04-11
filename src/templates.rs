@@ -1,6 +1,8 @@
 use minijinja::Environment;
 use std::sync::Arc;
 
+include!(concat!(env!("OUT_DIR"), "/asset_fingerprint.rs"));
+
 pub struct TemplateEngine {
     inner: Arc<Environment<'static>>,
 }
@@ -8,6 +10,7 @@ pub struct TemplateEngine {
 impl TemplateEngine {
     pub fn embedded() -> anyhow::Result<Self> {
         let mut env = Environment::new();
+        env.add_global("asset_version", ASSET_FINGERPRINT);
         const BASE: &str =
             include_str!(concat!(env!("CARGO_MANIFEST_DIR"), "/templates/base.html"));
         const INDEX: &str =

@@ -24,5 +24,14 @@ pub async fn static_get(Path(path): Path<String>) -> Response {
     };
 
     let body = Body::from(file.data.into_owned());
-    (StatusCode::OK, [(header::CONTENT_TYPE, ct)], body).into_response()
+    let cache_control = HeaderValue::from_static("public, max-age=31536000, immutable");
+    (
+        StatusCode::OK,
+        [
+            (header::CONTENT_TYPE, ct),
+            (header::CACHE_CONTROL, cache_control),
+        ],
+        body,
+    )
+        .into_response()
 }
