@@ -204,8 +204,25 @@ impl AppConfig {
     }
 
     fn validate(&self) -> anyhow::Result<()> {
-        if self.admin.password_sha256_hex.len() > 64 {
-            anyhow::bail!("admin.password_sha256_hex too long");
+        let admin_pw = &self.admin.password_sha256_hex;
+        if !admin_pw.is_empty() {
+            if admin_pw.len() > 512 {
+                anyhow::bail!("admin.password_sha256_hex too long");
+            }
+            if admin_pw.starts_with("$argon2") {
+                argon2::password_hash::PasswordHash::new(admin_pw)
+                    .map_err(|_| anyhow::anyhow!("admin.password_sha256_hex: invalid Argon2 PHC"))?;
+            } else if admin_pw.len() == 64 && admin_pw.chars().all(|c| c.is_ascii_hexdigit()) {
+                let bytes = hex::decode(admin_pw.to_ascii_lowercase())
+                    .map_err(|_| anyhow::anyhow!("admin.password_sha256_hex: invalid hex"))?;
+                if bytes.len() != 32 {
+                    anyhow::bail!("admin.password_sha256_hex: legacy form must be 64 hex chars");
+                }
+            } else {
+                anyhow::bail!(
+                    "admin.password_sha256_hex must be 64 hex chars (legacy SHA-256) or Argon2 PHC ($argon2...)"
+                );
+            }
         }
         let key_bytes = hex::decode(self.admin.session_signing_key_hex.to_ascii_lowercase()).map_err(
             |_| anyhow::anyhow!("admin.session_signing_key_hex must be 64 valid hex characters"),

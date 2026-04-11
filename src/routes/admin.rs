@@ -1,5 +1,5 @@
 use crate::error::AppError;
-use crate::password::verify_admin_password_hex;
+use crate::password::verify_admin_password;
 use crate::routes::common::{challenge_admin_ip, human_size, valid_link_id};
 use crate::routes::locale::{request_locale, tr_value};
 use crate::state::AppState;
@@ -112,7 +112,7 @@ pub async fn admin_login(
     }
     let loc = request_locale(&state.cfg, &headers, &jar);
     let tr = tr_value(&state.i18n, loc);
-    if !verify_admin_password_hex(&state.cfg.admin.password_sha256_hex, &form.admin_password) {
+    if !verify_admin_password(&state.cfg.admin.password_sha256_hex, &form.admin_password) {
         let html = state
             .minijinja()
             .get_template("admin_login.html")

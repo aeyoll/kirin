@@ -42,7 +42,7 @@ preview = true
 download_password_requirement = "optional"
 
 [admin]
-# 64-char hex = echo -n 'yourpassword' | sha256sum (Jirafeau style). Empty disables admin UI.
+# Admin password: empty disables admin UI. Prefer Argon2 PHC (e.g. from `kirin` tooling or a small script using the same crate); legacy 64-char hex = echo -n 'password' | sha256sum
 password_sha256_hex = ""
 # Required: unique 64 hex chars (32 bytes) for admin sessions and upload-complete tokens.
 #   openssl rand -hex 32
