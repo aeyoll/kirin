@@ -35,7 +35,7 @@ See `docs/ARCHITECTURE.md` for routes, storage layout, and security notes.
 Build an image from the repository root (this crate):
 
 ```bash
-docker build -t kirin:latest -f Dockerfile .
+docker build -t aeyoll/kirin:latest -f Dockerfile .
 ```
 
 Run with a mounted config and persistent data directory:
@@ -44,7 +44,7 @@ Run with a mounted config and persistent data directory:
 docker run --rm -p 8080:8080 \
   -v /path/to/config.toml:/etc/kirin/config.toml:ro \
   -v /path/to/data:/srv/data \
-  kirin:latest
+  aeyoll/kirin:latest
 ```
 
 Point `server.data_dir` in the mounted config at the path visible inside the container (for example `/srv/data`) and set `server.bind` to `0.0.0.0:8080` if you publish port 8080.
