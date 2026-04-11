@@ -50,6 +50,12 @@ pub async fn async_init(
     if !cfg.availability_enabled(&init.time) {
         return Err(AppError::BadRequest("invalid time".into()));
     }
+    match cfg.features.download_password_requirement.as_str() {
+        "required" if init.key.is_empty() => {
+            return Err(AppError::BadRequest("download password required".into()));
+        }
+        _ => {}
+    }
     let one_time = cfg.features.one_time_download && init.one_time_download.as_deref() == Some("1");
     if !cfg.features.one_time_download && init.one_time_download.is_some() {
         return Err(AppError::BadRequest("one time disabled".into()));
