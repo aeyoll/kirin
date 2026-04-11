@@ -19,6 +19,10 @@ impl TemplateEngine {
             include_str!(concat!(env!("CARGO_MANIFEST_DIR"), "/templates/admin_login.html"));
         const UPLOAD_RESULT: &str =
             include_str!(concat!(env!("CARGO_MANIFEST_DIR"), "/templates/upload_result.html"));
+        const FILE_UNAVAILABLE: &str = include_str!(concat!(
+            env!("CARGO_MANIFEST_DIR"),
+            "/templates/file_unavailable.html"
+        ));
         env.add_template("base.html", BASE)?;
         env.add_template("index.html", INDEX)?;
         env.add_template("download.html", DOWNLOAD)?;
@@ -26,6 +30,7 @@ impl TemplateEngine {
         env.add_template("admin.html", ADMIN)?;
         env.add_template("admin_login.html", ADMIN_LOGIN)?;
         env.add_template("upload_result.html", UPLOAD_RESULT)?;
+        env.add_template("file_unavailable.html", FILE_UNAVAILABLE)?;
         Ok(Self {
             inner: Arc::new(env),
         })

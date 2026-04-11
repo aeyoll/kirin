@@ -7,6 +7,7 @@ use crate::storage::DynStorage;
 use axum::body::Body;
 use axum::extract::{Path, Query, State};
 use axum::http::header;
+use axum::http::StatusCode;
 use axum::response::{Html, IntoResponse, Response};
 use bytes::Bytes;
 use futures_util::Stream;
@@ -26,23 +27,84 @@ pub struct DownloadQuery {
     pub p: Option<String>,
 }
 
+#[derive(Clone, Copy)]
+enum FileUnavailableKind {
+    Missing,
+    Expired,
+}
+
+async fn render_file_unavailable(
+    state: &AppState,
+    kind: FileUnavailableKind,
+) -> Result<Response, AppError> {
+    let (status, status_u16, headline, description) = match kind {
+        FileUnavailableKind::Missing => (
+            StatusCode::NOT_FOUND,
+            404u16,
+            "File not found",
+            "This link is invalid, the file was deleted, or it is no longer stored here.",
+        ),
+        FileUnavailableKind::Expired => (
+            StatusCode::GONE,
+            410u16,
+            "This link has expired",
+            "Shared files here are temporary. Ask the sender for a new link, or upload a file from the home page.",
+        ),
+    };
+    let site_title = state.cfg.ui.title.clone();
+    let organisation = state.cfg.ui.organisation.clone();
+    let page_title = format!("{headline} - {site_title}");
+    let ctx = minijinja::context! {
+        page_title => page_title,
+        site_title => site_title,
+        organisation => organisation,
+        status_code => status_u16.to_string(),
+        headline => headline,
+        description => description,
+        home_action_label => "Back to home",
+    };
+    let html = state
+        .minijinja()
+        .get_template("file_unavailable.html")
+        .map_err(|_| AppError::Internal)?
+        .render(ctx)
+        .map_err(|_| AppError::Internal)?;
+    Ok((status, Html(html)).into_response())
+}
+
+async fn stream_blob_or_unavailable(
+    state: &AppState,
+    storage: &DynStorage,
+    path: std::path::PathBuf,
+    meta: &FileMeta,
+    inline: bool,
+    one_time: bool,
+) -> Result<Response, AppError> {
+    match stream_blob(storage, path, meta, inline, one_time).await {
+        Ok(r) => Ok(r),
+        Err(AppError::NotFound) => {
+            render_file_unavailable(state, FileUnavailableKind::Missing).await
+        }
+        Err(e) => Err(e),
+    }
+}
+
 pub async fn download_get(
     State(state): State<AppState>,
     Path(link_id): Path<String>,
     Query(q): Query<DownloadQuery>,
 ) -> Result<Response, AppError> {
     if !valid_link_id(&link_id) {
-        return Err(AppError::NotFound);
+        return render_file_unavailable(&state, FileUnavailableKind::Missing).await;
     }
-    let meta = state
-        .storage
-        .read_meta(&link_id)
-        .await?
-        .ok_or(AppError::NotFound)?;
+    let meta = match state.storage.read_meta(&link_id).await? {
+        Some(m) => m,
+        None => return render_file_unavailable(&state, FileUnavailableKind::Missing).await,
+    };
     let now = chrono::Utc::now().timestamp();
     if meta.is_expired(now) {
         let _ = state.storage.delete_link(&link_id).await;
-        return Err(AppError::Gone);
+        return render_file_unavailable(&state, FileUnavailableKind::Expired).await;
     }
 
     if let Some(ref dc) = q.d {
@@ -51,7 +113,13 @@ pub async fn download_get(
         }
     }
 
-    let blob = state.storage.open_blob_path(&link_id).await?;
+    let blob = match state.storage.open_blob_path(&link_id).await {
+        Ok(p) => p,
+        Err(AppError::NotFound) => {
+            return render_file_unavailable(&state, FileUnavailableKind::Missing).await;
+        }
+        Err(e) => return Err(e),
+    };
 
     let inline = q.p.as_deref() == Some("1");
     let want_data = q.d.as_deref() == Some("1") || inline;
@@ -60,7 +128,15 @@ pub async fn download_get(
         if meta.download_password_hash.is_some() {
             return Err(AppError::Forbidden);
         }
-        return stream_blob(&state.storage, blob, &meta, inline, meta.one_time).await;
+        return stream_blob_or_unavailable(
+            &state,
+            &state.storage,
+            blob,
+            &meta,
+            inline,
+            meta.one_time,
+        )
+        .await;
     }
 
     let need_password = meta.download_password_hash.is_some();
@@ -74,17 +150,16 @@ pub async fn download_post(
     mut multipart: axum::extract::Multipart,
 ) -> Result<Response, AppError> {
     if !valid_link_id(&link_id) {
-        return Err(AppError::NotFound);
+        return render_file_unavailable(&state, FileUnavailableKind::Missing).await;
     }
-    let meta = state
-        .storage
-        .read_meta(&link_id)
-        .await?
-        .ok_or(AppError::NotFound)?;
+    let meta = match state.storage.read_meta(&link_id).await? {
+        Some(m) => m,
+        None => return render_file_unavailable(&state, FileUnavailableKind::Missing).await,
+    };
     let now = chrono::Utc::now().timestamp();
     if meta.is_expired(now) {
         let _ = state.storage.delete_link(&link_id).await;
-        return Err(AppError::Gone);
+        return render_file_unavailable(&state, FileUnavailableKind::Expired).await;
     }
 
     if let Some(ref dc) = q.d {
@@ -115,7 +190,13 @@ pub async fn download_post(
         }
     }
 
-    let blob = state.storage.open_blob_path(&link_id).await?;
+    let blob = match state.storage.open_blob_path(&link_id).await {
+        Ok(p) => p,
+        Err(AppError::NotFound) => {
+            return render_file_unavailable(&state, FileUnavailableKind::Missing).await;
+        }
+        Err(e) => return Err(e),
+    };
 
     let mut key = String::new();
     while let Some(field) = multipart
@@ -139,7 +220,8 @@ pub async fn download_post(
                 return Err(AppError::Forbidden);
             }
         }
-        return stream_blob(
+        return stream_blob_or_unavailable(
+            &state,
             &state.storage,
             blob,
             &meta,

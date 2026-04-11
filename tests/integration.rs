@@ -143,4 +143,10 @@ async fn upload_download_delete_roundtrip() {
 
     let gone = client.get(&dl_url).send().await.expect("after delete");
     assert_eq!(gone.status(), reqwest::StatusCode::NOT_FOUND);
+    let gone_html = gone.text().await.expect("after delete body");
+    assert!(
+        gone_html.contains("File not found"),
+        "expected HTML unavailable page, got: {}",
+        &gone_html[..gone_html.len().min(200)]
+    );
 }
