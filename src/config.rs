@@ -195,10 +195,13 @@ impl AppConfig {
         if self.admin.password_sha256_hex.len() > 64 {
             anyhow::bail!("admin.password_sha256_hex too long");
         }
-        if !self.admin.session_signing_key_hex.is_empty()
-            && self.admin.session_signing_key_hex.len() != 64
-        {
-            anyhow::bail!("admin.session_signing_key_hex must be 64 hex chars when set");
+        let key_bytes = hex::decode(self.admin.session_signing_key_hex.to_ascii_lowercase()).map_err(
+            |_| anyhow::anyhow!("admin.session_signing_key_hex must be 64 valid hex characters"),
+        )?;
+        if key_bytes.len() != 32 {
+            anyhow::bail!(
+                "admin.session_signing_key_hex must decode to 32 bytes (64 hex chars); use `openssl rand -hex 32`"
+            );
         }
         if self.ui.default_locale != "en"
             && self.ui.default_locale != "fr"
@@ -258,6 +261,7 @@ data_dir = "/tmp"
 [features]
 
 [admin]
+session_signing_key_hex = "0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef"
 
 [ui]
 title = "x"

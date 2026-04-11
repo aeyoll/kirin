@@ -29,13 +29,9 @@ pub fn create_app(cfg: Arc<AppConfig>) -> anyhow::Result<Router> {
     let jinja = Arc::new(TemplateEngine::embedded()?);
     let i18n = crate::i18n::Catalog::embedded()?;
 
-    let signing_key: Vec<u8> = if cfg.admin.session_signing_key_hex.is_empty() {
-        vec![0u8; 32]
-    } else {
-        <[u8; 32]>::from_hex(&cfg.admin.session_signing_key_hex)
-            .map(|a| a.to_vec())
-            .map_err(|_| anyhow::anyhow!("invalid session_signing_key_hex"))?
-    };
+    let signing_key: Vec<u8> = <[u8; 32]>::from_hex(cfg.admin.session_signing_key_hex.as_str())
+        .map(|a| a.to_vec())
+        .map_err(|_| anyhow::anyhow!("invalid session_signing_key_hex"))?;
 
     let state = AppState::new(cfg.clone(), storage, jinja, i18n, signing_key);
 

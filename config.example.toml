@@ -44,8 +44,9 @@ download_password_requirement = "optional"
 [admin]
 # 64-char hex = echo -n 'yourpassword' | sha256sum (Jirafeau style). Empty disables admin UI.
 password_sha256_hex = ""
-# 64 hex chars (32 bytes) used to sign admin session cookies; generate with openssl rand -hex 32
-session_signing_key_hex = "0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef"
+# Required: unique 64 hex chars (32 bytes) for admin sessions and upload-complete tokens.
+#   openssl rand -hex 32
+session_signing_key_hex = ""
 allowed_admin_ips = []
 
 [ui]
