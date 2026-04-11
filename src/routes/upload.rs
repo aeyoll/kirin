@@ -209,7 +209,7 @@ pub async fn process_multipart(
     let now = chrono::Utc::now().timestamp();
     let expires = expires_at_unix(now, time_key);
     let delete_code = gen_delete_code(5);
-    let link_len = cfg.limits.link_id_length.max(4).min(32) as usize;
+    let link_len = cfg.limits.link_id_length.clamp(4, 32) as usize;
     let mut link_id = gen_link_id(link_len);
     for _ in 0..32 {
         if state

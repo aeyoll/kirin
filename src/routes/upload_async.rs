@@ -258,7 +258,7 @@ pub async fn async_end(
         .map_err(|_| AppError::Internal)?;
     let hash = blake3::hash(&data);
     let now = chrono::Utc::now().timestamp();
-    let link_len = cfg.limits.link_id_length.max(4).min(32) as usize;
+    let link_len = cfg.limits.link_id_length.clamp(4, 32) as usize;
     let mut link_id = gen_link_id(link_len);
     for _ in 0..32 {
         if state

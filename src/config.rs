@@ -148,6 +148,7 @@ impl Default for FeaturesSection {
 }
 
 #[derive(Debug, Clone, Deserialize)]
+#[derive(Default)]
 pub struct AdminSection {
     #[serde(default)]
     pub password_sha256_hex: String,
@@ -157,15 +158,6 @@ pub struct AdminSection {
     pub allowed_admin_ips: Vec<String>,
 }
 
-impl Default for AdminSection {
-    fn default() -> Self {
-        Self {
-            password_sha256_hex: String::new(),
-            session_signing_key_hex: String::new(),
-            allowed_admin_ips: vec![],
-        }
-    }
-}
 
 #[derive(Debug, Clone, Deserialize)]
 pub struct UiSection {
