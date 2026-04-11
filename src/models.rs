@@ -30,6 +30,7 @@ impl FileMeta {
 
 #[derive(Debug, Clone)]
 pub struct AsyncUploadSession {
+    pub created_at_unix: i64,
     pub ref_token: String,
     pub rolling_code: String,
     pub filename: String,

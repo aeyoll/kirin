@@ -10,8 +10,29 @@ use axum::extract::{ConnectInfo, Multipart, State};
 use serde::Deserialize;
 use std::collections::HashMap;
 use std::net::SocketAddr;
+use std::path::PathBuf;
 use tokio::fs::{File, OpenOptions};
 use tokio::io::AsyncWriteExt;
+
+fn take_expired_async_sessions(
+    map: &mut HashMap<String, AsyncUploadSession>,
+    now: i64,
+    ttl_secs: u64,
+) -> Vec<PathBuf> {
+    let ttl = ttl_secs as i64;
+    let keys: Vec<String> = map
+        .iter()
+        .filter(|(_, s)| now.saturating_sub(s.created_at_unix) > ttl)
+        .map(|(k, _)| k.clone())
+        .collect();
+    let mut paths = Vec::new();
+    for k in keys {
+        if let Some(s) = map.remove(&k) {
+            paths.push(s.temp_blob_path);
+        }
+    }
+    paths
+}
 
 #[derive(Deserialize)]
 pub struct InitBody {
@@ -72,10 +93,27 @@ pub async fn async_init(
         .await
         .map_err(|_| AppError::Internal)?;
     let temp_blob_path = dir.join(format!("{ref_token}.data"));
+    let (stale_paths, capacity_ok) = {
+        let mut guard = state.async_sessions.lock().await;
+        let paths = take_expired_async_sessions(
+            &mut guard,
+            now,
+            cfg.limits.async_upload_session_ttl_secs,
+        );
+        let ok = guard.len() < cfg.limits.max_async_upload_sessions;
+        (paths, ok)
+    };
+    for p in &stale_paths {
+        let _ = tokio::fs::remove_file(p).await;
+    }
+    if !capacity_ok {
+        return Err(AppError::ServiceUnavailable);
+    }
     File::create(&temp_blob_path)
         .await
         .map_err(|_| AppError::Internal)?;
     let sess = AsyncUploadSession {
+        created_at_unix: now,
         ref_token: ref_token.clone(),
         rolling_code: code.clone(),
         filename: init.filename.clone(),
@@ -129,10 +167,20 @@ pub async fn async_push(
                 .get("code")
                 .cloned()
                 .ok_or_else(|| AppError::BadRequest("missing code".into()))?;
+            let now = chrono::Utc::now().timestamp();
+            let ttl_secs = cfg.limits.async_upload_session_ttl_secs as i64;
             let mut guard = state.async_sessions.lock().await;
             let sess = guard
                 .get_mut(&ref_token)
                 .ok_or(AppError::BadRequest("bad ref".into()))?;
+            if now.saturating_sub(sess.created_at_unix) > ttl_secs {
+                let path = sess.temp_blob_path.clone();
+                let tok = sess.ref_token.clone();
+                guard.remove(&tok);
+                drop(guard);
+                let _ = tokio::fs::remove_file(&path).await;
+                return Err(AppError::BadRequest("async session expired".into()));
+            }
             if sess.rolling_code != code {
                 return Err(AppError::Forbidden);
             }
@@ -181,14 +229,32 @@ pub async fn async_end(
     axum::Form(form): axum::Form<EndForm>,
 ) -> Result<String, AppError> {
     let cfg = &state.cfg;
+    let now = chrono::Utc::now().timestamp();
+    let ttl_secs = cfg.limits.async_upload_session_ttl_secs as i64;
     let mut guard = state.async_sessions.lock().await;
-    let sess = guard
-        .get(&form.ref_token)
-        .ok_or(AppError::BadRequest("bad ref".into()))?;
-    if sess.rolling_code != form.code {
+    let (expired, code_ok) = match guard.get(&form.ref_token) {
+        None => return Err(AppError::BadRequest("bad ref".into())),
+        Some(s) => (
+            now.saturating_sub(s.created_at_unix) > ttl_secs,
+            s.rolling_code == form.code,
+        ),
+    };
+    if expired {
+        let path = guard
+            .remove(&form.ref_token)
+            .map(|s| s.temp_blob_path);
+        drop(guard);
+        if let Some(p) = path {
+            let _ = tokio::fs::remove_file(p).await;
+        }
+        return Err(AppError::BadRequest("async session expired".into()));
+    }
+    if !code_ok {
         return Err(AppError::Forbidden);
     }
-    let sess = guard.remove(&form.ref_token).unwrap();
+    let sess = guard
+        .remove(&form.ref_token)
+        .ok_or(AppError::BadRequest("bad ref".into()))?;
     drop(guard);
 
     let tmp_path = sess.temp_blob_path.clone();
@@ -210,6 +276,15 @@ pub async fn async_end(
             break;
         }
         link_id = gen_link_id(link_len);
+    }
+    if state
+        .storage
+        .read_meta(&link_id)
+        .await
+        .map_err(|_| AppError::Internal)?
+        .is_some()
+    {
+        return Err(AppError::Conflict);
     }
     let delete_code = gen_delete_code(5);
     let mut mime = sess.mime_type.clone();

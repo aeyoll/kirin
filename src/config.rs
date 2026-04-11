@@ -43,10 +43,22 @@ pub struct LimitsSection {
     pub max_upload_bytes: u64,
     #[serde(default = "default_link_len")]
     pub link_id_length: u8,
+    #[serde(default = "default_max_async_upload_sessions")]
+    pub max_async_upload_sessions: usize,
+    #[serde(default = "default_async_upload_session_ttl_secs")]
+    pub async_upload_session_ttl_secs: u64,
 }
 
 fn default_link_len() -> u8 {
     8
+}
+
+fn default_max_async_upload_sessions() -> usize {
+    512
+}
+
+fn default_async_upload_session_ttl_secs() -> u64 {
+    3600
 }
 
 #[derive(Debug, Clone, Deserialize, Default)]
