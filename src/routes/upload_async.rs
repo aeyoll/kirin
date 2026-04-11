@@ -1,4 +1,5 @@
 use crate::error::AppError;
+use crate::multipart_util::{field_text_limited, MAX_MULTIPART_FIELDS};
 use crate::expiry::expires_at_unix;
 use crate::models::{AsyncUploadSession, FileMeta};
 use crate::password::hash_download_password;
@@ -108,11 +109,16 @@ pub async fn async_push(
 ) -> Result<String, AppError> {
     let cfg = &state.cfg;
     let mut fields: HashMap<String, String> = HashMap::new();
-    while let Some(field) = multipart
+    let mut field_count = 0usize;
+    while let Some(mut field) = multipart
         .next_field()
         .await
         .map_err(|_| AppError::BadRequest("multipart".into()))?
     {
+        field_count += 1;
+        if field_count > MAX_MULTIPART_FIELDS {
+            return Err(AppError::BadRequest("too many multipart parts".into()));
+        }
         let n = field.name().unwrap_or("").to_string();
         if n == "data" {
             let ref_token = fields
@@ -157,9 +163,8 @@ pub async fn async_push(
             sess.rolling_code = new_code.clone();
             return Ok(new_code);
         }
-        if let Ok(t) = field.text().await {
-            fields.insert(n, t);
-        }
+        let t = field_text_limited(&mut field).await?;
+        fields.insert(n, t);
     }
     Err(AppError::BadRequest("missing data".into()))
 }

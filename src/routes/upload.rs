@@ -1,4 +1,5 @@
 use crate::error::AppError;
+use crate::multipart_util::{field_text_limited, MAX_MULTIPART_FIELDS};
 use crate::expiry::expires_at_unix;
 use crate::models::FileMeta;
 use crate::password::hash_download_password;
@@ -108,11 +109,17 @@ pub async fn process_multipart(
         .map_err(|_| AppError::Internal)?;
     let tmp_file = tmp_dir.join(format!("{}.part", uuid::Uuid::new_v4()));
 
+    let mut field_count = 0usize;
     while let Some(mut field) = multipart
         .next_field()
         .await
         .map_err(|_| AppError::BadRequest("multipart".into()))?
     {
+        field_count += 1;
+        if field_count > MAX_MULTIPART_FIELDS {
+            let _ = tokio::fs::remove_file(&tmp_file).await;
+            return Err(AppError::BadRequest("too many multipart parts".into()));
+        }
         let name = field.name().unwrap_or("").to_string();
         if name == "file" {
             original_name = field
@@ -143,7 +150,8 @@ pub async fn process_multipart(
             }
             f.flush().await.map_err(|_| AppError::Internal)?;
             tmp_path = Some(tmp_file.clone());
-        } else if let Ok(t) = field.text().await {
+        } else {
+            let t = field_text_limited(&mut field).await?;
             map.insert(name, t);
         }
     }

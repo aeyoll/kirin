@@ -1,4 +1,5 @@
 use crate::error::AppError;
+use crate::multipart_util::{field_text_limited, MAX_MULTIPART_FIELDS};
 use crate::i18n::Locale;
 use crate::models::FileMeta;
 use crate::password::verify_download_password;
@@ -242,16 +243,18 @@ pub async fn download_post(
                 return Err(AppError::Forbidden);
             }
             let mut confirm = false;
-            while let Some(field) = multipart
+            let mut field_count = 0usize;
+            while let Some(mut field) = multipart
                 .next_field()
                 .await
                 .map_err(|_| AppError::BadRequest("multipart".into()))?
             {
+                field_count += 1;
+                if field_count > MAX_MULTIPART_FIELDS {
+                    return Err(AppError::BadRequest("too many multipart parts".into()));
+                }
                 if field.name() == Some("confirm") {
-                    let t = field
-                        .text()
-                        .await
-                        .map_err(|_| AppError::BadRequest("confirm".into()))?;
+                    let t = field_text_limited(&mut field).await?;
                     confirm = t == "1";
                 }
             }
@@ -282,16 +285,18 @@ pub async fn download_post(
     };
 
     let mut key = String::new();
-    while let Some(field) = multipart
+    let mut field_count = 0usize;
+    while let Some(mut field) = multipart
         .next_field()
         .await
         .map_err(|_| AppError::BadRequest("multipart".into()))?
     {
+        field_count += 1;
+        if field_count > MAX_MULTIPART_FIELDS {
+            return Err(AppError::BadRequest("too many multipart parts".into()));
+        }
         if field.name() == Some("key") {
-            key = field
-                .text()
-                .await
-                .map_err(|_| AppError::BadRequest("key".into()))?;
+            key = field_text_limited(&mut field).await?;
         }
     }
 

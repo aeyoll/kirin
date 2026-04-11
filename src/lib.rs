@@ -1,6 +1,7 @@
 pub mod app;
 pub mod config;
 pub mod error;
+pub mod multipart_util;
 pub mod expiry;
 pub mod i18n;
 pub mod models;
