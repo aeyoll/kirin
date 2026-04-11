@@ -200,8 +200,11 @@ impl AppConfig {
         {
             anyhow::bail!("admin.session_signing_key_hex must be 64 hex chars when set");
         }
-        if self.ui.default_locale != "en" && self.ui.default_locale != "fr" {
-            anyhow::bail!("ui.default_locale must be \"en\" or \"fr\"");
+        if self.ui.default_locale != "en"
+            && self.ui.default_locale != "fr"
+            && self.ui.default_locale != "ja"
+        {
+            anyhow::bail!("ui.default_locale must be \"en\", \"fr\", or \"ja\"");
         }
         Ok(())
     }

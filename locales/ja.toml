@@ -1,0 +1,105 @@
+[common]
+language_label = "言語"
+back_home = "ホームに戻る"
+try_again = "再試行"
+skip_main = "本文へスキップ"
+admin_link = "管理"
+back_upload = "アップロードに戻る"
+
+[base]
+theme_toggle = "テーマ"
+theme_dark = "ダークモード"
+theme_light = "ライトモード"
+theme_aria_to_light = "ライトモードに切り替え"
+theme_aria_to_dark = "ダークモードに切り替え"
+
+[index]
+upload_heading = "ファイルをアップロード"
+upload_lead = "ファイルとリンクの有効期限を選びます。"
+file_label = "ファイル"
+file_drop = "ここにファイルをドロップするか、クリックして参照"
+file_hint = "サーバーの上限まで、任意の形式"
+expires_after = "有効期限"
+one_time_label = "最初のダウンロード後にファイルを削除"
+one_time_help = "誰かがファイルをダウンロードするとリンクは無効になります。"
+download_password_optional = "ダウンロード用パスワード（任意）"
+upload_password = "アップロード用パスワード"
+send_file = "ファイルを送信"
+
+[avail]
+minute = "1分"
+hour = "1時間"
+day = "1日"
+week = "1週間"
+fortnight = "2週間"
+month = "1か月"
+quarter = "3か月"
+year = "1年"
+none = "無期限"
+
+[upload_result]
+page_title = "アップロード完了"
+heading = "アップロード完了"
+lead = "ファイルが必要な人にこれらのリンクを共有してください。"
+your_file = "あなたのファイル："
+download_page = "ダウンロードページ"
+open_download_page = "ダウンロードページを開く"
+direct_download = "直接ダウンロード"
+direct_link = "直接リンク"
+delete_link = "削除用リンク"
+remove_file = "ファイルを削除"
+upload_another = "別のファイルをアップロード"
+
+[download]
+password_gate_title = "パスワードが必要です"
+password_gate_lead = "このファイルは保護されています。ダウンロード用パスワードを入力してください。"
+one_time_notice = "最初のダウンロードが成功するとこのファイルは削除されます。"
+password_label = "パスワード"
+download_button = "ダウンロード"
+preview_button = "プレビュー"
+size_label = "サイズ："
+
+[delete_confirm]
+page_title = "ファイルを削除"
+heading = "削除の確認"
+lead = "この操作は取り消せません。"
+delete_question_prefix = "次を削除します："
+delete_question_suffix = "？"
+delete_permanently = "完全に削除"
+
+[delete_done]
+message = "ファイルを削除しました。"
+
+[file_unavailable]
+status_forbidden = "403 禁止"
+
+[download_errors]
+wrong_password_title = "パスワードが違います"
+wrong_password_body = "入力したパスワードが正しくありません。リンクを共有した人に正しいパスワードを確認してから再度お試しください。"
+data_requires_password_title = "パスワードが必要です"
+data_requires_password_body = "このファイルは保護されています。ダウンロードページを開き、そこでパスワードを入力してください。パスワードなしではファイルを取得できません。"
+not_found_title = "ファイルが見つかりません"
+not_found_body = "このリンクは無効か、ファイルが削除されたか、ここに保存されていません。"
+expired_title = "このリンクの有効期限が切れています"
+expired_body = "ここで共有されるファイルは一時的なものです。送信者に新しいリンクを依頼するか、ホームページからファイルをアップロードしてください。"
+
+[admin]
+page_title = "管理"
+heading = "ファイル"
+lead = "このインスタンスでアップロードされたリンクを管理します。"
+logout = "ログアウト"
+table_link = "リンク"
+table_name = "名前"
+table_size = "サイズ"
+table_expires = "有効期限"
+table_actions = "操作"
+delete_button = "削除"
+login_page_title = "管理者ログイン"
+login_heading = "管理"
+login_lead = "管理者パスワードでサインインしてください。"
+admin_password_label = "管理者パスワード"
+login_button = "ログイン"
+disabled_message = "管理機能は無効です（管理者パスワードが設定されていません）。"
+invalid_password = "パスワードが正しくありません。"
+expires_never = "なし"
+expires_unknown = "不明"

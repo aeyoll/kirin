@@ -22,11 +22,11 @@ All settings live in one TOML file. The authoritative annotated example is `conf
 - `availabilities`: which expiry choices the UI may offer; `default` is the preselected duration on the index form.
 - `features`: one-time download, preview, and download-password policy (`optional`, `required`, or `generated` placeholder).
 - `admin`: SHA-256 hex of the admin password (empty disables admin), 64-hex session signing key, optional admin IP allow list.
-- `ui`: page title, optional organisation string, and `default_locale` (`en` or `fr`, default `en`).
+- `ui`: page title, optional organisation string, and `default_locale` (`en`, `fr`, or `ja`, default `en`).
 
 ### Language
 
-Supported locales are `en` and `fr`. If the browser sends no `kirin_locale` cookie, the UI language follows `Accept-Language` when it starts with English or French; otherwise `ui.default_locale` is used. Visitors can switch language with the buttons in the header; the choice is stored in the `kirin_locale` cookie (set only via `POST /locale`).
+Supported locales are `en`, `fr`, and `ja`. If the browser sends no `kirin_locale` cookie, the UI language follows `Accept-Language` when it starts with English, French, or Japanese; otherwise `ui.default_locale` is used. Visitors can switch language with the selector in the header; the choice is stored in the `kirin_locale` cookie (set only via `POST /locale`).
 
 See `docs/ARCHITECTURE.md` for routes, storage layout, and security notes.
 

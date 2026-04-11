@@ -51,4 +51,5 @@ allowed_admin_ips = []
 [ui]
 title = "Kirin"
 organisation = ""
+# en | fr | ja
 default_locale = "en"

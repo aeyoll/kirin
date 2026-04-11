@@ -7,6 +7,7 @@ use toml::Value;
 pub enum Locale {
     En,
     Fr,
+    Ja,
 }
 
 impl Locale {
@@ -14,6 +15,7 @@ impl Locale {
         match self {
             Locale::En => "en",
             Locale::Fr => "fr",
+            Locale::Ja => "ja",
         }
     }
 }
@@ -22,29 +24,33 @@ impl Locale {
 pub struct Catalog {
     en: HashMap<String, String>,
     fr: HashMap<String, String>,
+    ja: HashMap<String, String>,
 }
 
 const EN_SRC: &str = include_str!(concat!(env!("CARGO_MANIFEST_DIR"), "/locales/en.toml"));
 const FR_SRC: &str = include_str!(concat!(env!("CARGO_MANIFEST_DIR"), "/locales/fr.toml"));
+const JA_SRC: &str = include_str!(concat!(env!("CARGO_MANIFEST_DIR"), "/locales/ja.toml"));
 
 impl Catalog {
     pub fn embedded() -> anyhow::Result<Arc<Self>> {
         let en = flatten_toml("", &EN_SRC.parse::<Value>()?)?;
         let fr = flatten_toml("", &FR_SRC.parse::<Value>()?)?;
-        Ok(Arc::new(Self { en, fr }))
+        let ja = flatten_toml("", &JA_SRC.parse::<Value>()?)?;
+        Ok(Arc::new(Self { en, fr, ja }))
     }
 
     pub fn get(&self, locale: Locale, key: &str) -> String {
         let primary = match locale {
             Locale::En => &self.en,
             Locale::Fr => &self.fr,
+            Locale::Ja => &self.ja,
         };
         if let Some(v) = primary.get(key) {
             return v.clone();
         }
-        if locale == Locale::Fr {
+        if locale != Locale::En {
             if let Some(v) = self.en.get(key) {
-                tracing::debug!(key, "i18n fallback fr -> en");
+                tracing::debug!(key, locale = ?locale, "i18n fallback to en");
                 return v.clone();
             }
         }
@@ -58,6 +64,11 @@ impl Catalog {
                 .en
                 .keys()
                 .map(|k| (k.clone(), self.get(Locale::Fr, k)))
+                .collect(),
+            Locale::Ja => self
+                .en
+                .keys()
+                .map(|k| (k.clone(), self.get(Locale::Ja, k)))
                 .collect(),
         }
     }
@@ -104,6 +115,9 @@ pub fn resolve_locale(
         if c == "fr" {
             return Locale::Fr;
         }
+        if c == "ja" {
+            return Locale::Ja;
+        }
     }
     if let Some(header) = accept_language {
         for tag in header.split(',') {
@@ -123,12 +137,15 @@ pub fn resolve_locale(
             if primary == "en" {
                 return Locale::En;
             }
+            if primary == "ja" {
+                return Locale::Ja;
+            }
         }
     }
-    if default == "fr" {
-        Locale::Fr
-    } else {
-        Locale::En
+    match default {
+        "fr" => Locale::Fr,
+        "ja" => Locale::Ja,
+        _ => Locale::En,
     }
 }
 
@@ -169,8 +186,21 @@ mod tests {
         let cat = Catalog {
             en,
             fr: HashMap::new(),
+            ja: HashMap::new(),
         };
         assert_eq!(cat.get(Locale::Fr, "only.en"), "English only");
+    }
+
+    #[test]
+    fn ja_falls_back_to_en_for_missing_key() {
+        let mut en = HashMap::new();
+        en.insert("only.en".into(), "English only".into());
+        let cat = Catalog {
+            en,
+            fr: HashMap::new(),
+            ja: HashMap::new(),
+        };
+        assert_eq!(cat.get(Locale::Ja, "only.en"), "English only");
     }
 
     #[test]
@@ -181,12 +211,17 @@ mod tests {
             cat.get(Locale::Fr, "index.upload_heading"),
             "Envoyer un fichier"
         );
+        assert_eq!(
+            cat.get(Locale::Ja, "index.upload_heading"),
+            "ファイルをアップロード"
+        );
     }
 
     #[test]
     fn resolve_default_when_no_cookie_no_header() {
         assert_eq!(resolve_locale(None, None, "en"), Locale::En);
         assert_eq!(resolve_locale(None, None, "fr"), Locale::Fr);
+        assert_eq!(resolve_locale(None, None, "ja"), Locale::Ja);
     }
 
     #[test]
@@ -198,8 +233,21 @@ mod tests {
     }
 
     #[test]
+    fn resolve_ja_from_accept_language() {
+        assert_eq!(
+            resolve_locale(None, Some("ja-JP, en;q=0.9"), "en"),
+            Locale::Ja
+        );
+    }
+
+    #[test]
     fn cookie_overrides_accept_language() {
         assert_eq!(resolve_locale(Some("fr"), Some("en-US"), "en"), Locale::Fr);
+    }
+
+    #[test]
+    fn cookie_ja_overrides_accept_language() {
+        assert_eq!(resolve_locale(Some("ja"), Some("en-US"), "en"), Locale::Ja);
     }
 
     #[test]

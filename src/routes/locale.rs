@@ -41,7 +41,7 @@ pub async fn locale_post(
         .and_then(|v| v.to_str().ok())
         .unwrap_or("");
 
-    if form.locale == "en" || form.locale == "fr" {
+    if form.locale == "en" || form.locale == "fr" || form.locale == "ja" {
         let cookie = Cookie::build((LOCALE_COOKIE_NAME, form.locale.clone()))
             .path("/")
             .same_site(SameSite::Lax)
