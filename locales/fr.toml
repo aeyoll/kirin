@@ -27,6 +27,8 @@ upload_password = "Mot de passe d'envoi"
 send_file = "Envoyer le fichier"
 uploading = "Envoi en cours…"
 upload_failed = "L'envoi a échoué. Veuillez réessayer."
+upload_progress_caption = "Progression du transfert"
+upload_progress_detail = "{percent}% ({sent} / {total})"
 
 [avail]
 minute = "Une minute"

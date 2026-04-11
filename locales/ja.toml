@@ -27,6 +27,8 @@ upload_password = "アップロード用パスワード"
 send_file = "ファイルを送信"
 uploading = "アップロード中…"
 upload_failed = "アップロードに失敗しました。もう一度お試しください。"
+upload_progress_caption = "転送の進捗"
+upload_progress_detail = "{percent}%（{sent} / {total}）"
 
 [avail]
 minute = "1分"

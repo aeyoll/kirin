@@ -27,6 +27,8 @@ upload_password = "Upload password"
 send_file = "Send file"
 uploading = "Uploading…"
 upload_failed = "Upload failed. Please try again."
+upload_progress_caption = "Transfer progress"
+upload_progress_detail = "{percent}% ({sent} / {total})"
 
 [avail]
 minute = "One minute"

@@ -21,6 +21,7 @@
     novalidate
     data-msg-uploading="{{ tr["index.uploading"] }}"
     data-msg-failed="{{ tr["index.upload_failed"] }}"
+    data-progress-detail="{{ tr["index.upload_progress_detail"]|e }}"
   >
     <div>
       <label
@@ -92,6 +93,17 @@
         class="inline-flex items-center justify-center rounded-lg bg-indigo-600 px-5 py-2.5 text-sm font-semibold text-white shadow-sm transition hover:bg-indigo-500 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2 dark:bg-indigo-500 dark:hover:bg-indigo-400 dark:focus:ring-offset-slate-950"
       >{{ tr["index.send_file"] }}</button>
     </div>
+    <div id="upload-progress" class="hidden space-y-2 pt-4" aria-hidden="true">
+      <p id="upload-progress-heading" class="text-sm font-medium text-slate-700 dark:text-slate-300">{{ tr["index.upload_progress_caption"] }}</p>
+      <progress
+        id="upload-progress-bar"
+        class="upload-progress-meter h-2.5 w-full overflow-hidden rounded-full accent-indigo-600 dark:accent-indigo-500"
+        max="1"
+        value="0"
+        aria-labelledby="upload-progress-heading"
+      ></progress>
+      <p id="upload-progress-detail" class="text-xs tabular-nums text-slate-600 dark:text-slate-400"></p>
+    </div>
   </form>
 </section>
 <script>
@@ -102,8 +114,61 @@
     var fileInput = document.getElementById('file');
     var submitBtn = document.getElementById('upload-submit');
     var errBox = document.getElementById('upload-async-error');
+    var progressWrap = document.getElementById('upload-progress');
+    var progressBar = document.getElementById('upload-progress-bar');
+    var progressDetail = document.getElementById('upload-progress-detail');
     var chunkSize = 2048 * 1024;
     var defaultBtnLabel = submitBtn ? submitBtn.textContent : '';
+
+    function formatBytes(n) {
+      if (!isFinite(n) || n < 0) return '0 B';
+      if (n < 1024) return n + ' B';
+      var u = ['KB', 'MB', 'GB'];
+      var i = -1;
+      do {
+        n /= 1024;
+        i++;
+      } while (n >= 1024 && i < u.length - 1);
+      return (n < 10 && i >= 0 ? n.toFixed(1) : Math.round(n)) + ' ' + u[i];
+    }
+
+    function hideProgress() {
+      if (!progressWrap) return;
+      progressWrap.classList.add('hidden');
+      progressWrap.setAttribute('aria-hidden', 'true');
+      if (progressBar) {
+        progressBar.value = 0;
+        progressBar.max = 1;
+        progressBar.removeAttribute('aria-valuetext');
+      }
+      if (progressDetail) progressDetail.textContent = '';
+    }
+
+    function showProgress(totalBytes) {
+      if (!progressWrap) return;
+      progressWrap.classList.remove('hidden');
+      progressWrap.setAttribute('aria-hidden', 'false');
+      updateProgressBytes(0, totalBytes);
+    }
+
+    function updateProgressBytes(sent, total) {
+      if (!progressBar || !progressDetail) return;
+      var tmpl = form.dataset.progressDetail || '{percent}% ({sent} / {total})';
+      if (total <= 0) {
+        progressBar.max = 1;
+        progressBar.value = 1;
+      } else {
+        progressBar.max = total;
+        progressBar.value = Math.min(sent, total);
+      }
+      var pct = total > 0 ? Math.min(100, Math.floor((100 * sent) / total)) : 100;
+      var line = tmpl
+        .replace(/\{percent\}/g, String(pct))
+        .replace(/\{sent\}/g, formatBytes(sent))
+        .replace(/\{total\}/g, formatBytes(total));
+      progressDetail.textContent = line;
+      progressBar.setAttribute('aria-valuetext', line);
+    }
 
     function hideError() {
       if (!errBox) return;
@@ -130,6 +195,7 @@
     }
 
     function resetSubmitUi() {
+      hideProgress();
       if (submitBtn) {
         submitBtn.disabled = false;
         submitBtn.setAttribute('aria-busy', 'false');
@@ -140,6 +206,7 @@
     form.addEventListener('submit', function (ev) {
       ev.preventDefault();
       hideError();
+      hideProgress();
       if (!fileInput || !fileInput.files || fileInput.files.length === 0) {
         showError(form.dataset.msgFailed || 'Upload failed.');
         return;
@@ -152,6 +219,7 @@
         submitBtn.setAttribute('aria-busy', 'true');
         submitBtn.textContent = form.dataset.msgUploading || defaultBtnLabel;
       }
+      showProgress(file.size);
 
       var params = new URLSearchParams();
       params.set('filename', file.name || 'upload.bin');
@@ -181,11 +249,14 @@
         if (!refToken || rolling.length !== 4) throw new Error(msgFailed);
         var sess = { refToken: refToken, code: rolling };
         var offset = 0;
+        updateProgressBytes(0, file.size);
         function pushNext() {
-          if (offset >= file.size) return Promise.resolve(sess);
+          if (offset >= file.size) {
+            updateProgressBytes(file.size, file.size);
+            return Promise.resolve(sess);
+          }
           var end = Math.min(offset + chunkSize, file.size);
           var slice = file.slice(offset, end);
-          offset = end;
           var fd = new FormData();
           fd.append('ref', sess.refToken);
           fd.append('code', sess.code);
@@ -200,6 +271,8 @@
           }).then(function (nextCode) {
             sess.code = nextCode.trim();
             if (sess.code.length !== 4) throw new Error(msgFailed);
+            offset = end;
+            updateProgressBytes(offset, file.size);
             return pushNext();
           });
         }
