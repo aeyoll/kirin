@@ -64,10 +64,10 @@ pub async fn index_get(
                 .unwrap()
         })?
         .render(ctx)
-        .map_err(|e| {
+        .map_err(|_| {
             axum::response::Response::builder()
                 .status(500)
-                .body(e.to_string().into())
+                .body("internal error".into())
                 .unwrap()
         })?;
     Ok(Html(html))
