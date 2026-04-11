@@ -13,6 +13,9 @@ max_upload_chunk_bytes = 5_000_000
 # 0 = unlimited (Jirafeau uses MB; we use bytes for precision)
 max_upload_bytes = 0
 link_id_length = 8
+# Optional defaults: max concurrent async upload sessions (must be >= 1 if set), TTL in seconds
+# max_async_upload_sessions = 512
+# async_upload_session_ttl_secs = 3600
 
 [upload_auth]
 # Empty list = no upload password required (still subject to IP rules if set)
@@ -42,7 +45,7 @@ preview = true
 download_password_requirement = "optional"
 
 [admin]
-# Admin password: empty disables admin UI. Prefer Argon2 PHC (e.g. from `kirin` tooling or a small script using the same crate); legacy 64-char hex = echo -n 'password' | sha256sum
+# Admin password: empty disables admin UI. Prefer Argon2 PHC (string starting with $argon2); legacy 64-char hex = echo -n 'password' | sha256sum
 password_sha256_hex = ""
 # Required: unique 64 hex chars (32 bytes) for admin sessions and upload-complete tokens.
 #   openssl rand -hex 32
