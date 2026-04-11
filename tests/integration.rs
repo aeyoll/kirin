@@ -148,6 +148,116 @@ async fn upload_download_delete_roundtrip() {
     );
 }
 
+fn config_toml_large_multipart(data_dir: &std::path::Path, public_base: &str) -> String {
+    format!(
+        r#"
+[server]
+bind = "127.0.0.1:0"
+public_base_url = "{public_base}"
+data_dir = "{}"
+max_body_mb = 64
+
+[limits]
+max_upload_bytes = 50000000
+link_id_length = 8
+
+[upload_auth]
+passwords = []
+
+[availabilities]
+minute = true
+hour = true
+day = true
+week = true
+fortnight = true
+month = true
+quarter = false
+year = false
+none = false
+default = "hour"
+
+[features]
+one_time_download = true
+one_time_download_preselected = false
+preview = true
+download_password_requirement = "optional"
+
+[admin]
+password_sha256_hex = ""
+session_signing_key_hex = "0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef"
+allowed_admin_ips = []
+
+[ui]
+title = "Test"
+organisation = ""
+default_locale = "en"
+"#,
+        data_dir.display()
+    )
+}
+
+#[tokio::test]
+async fn multipart_upload_accepts_payload_larger_than_axum_default_limit() {
+    let tmp = TempDir::new().unwrap();
+    let data = tmp.path().join("data");
+    std::fs::create_dir_all(&data).unwrap();
+
+    let listener = TcpListener::bind("127.0.0.1:0").await.unwrap();
+    let port = listener.local_addr().unwrap().port();
+    let base = format!("http://127.0.0.1:{port}/");
+
+    let cfg_path = tmp.path().join("config.toml");
+    std::fs::write(&cfg_path, config_toml_large_multipart(&data, &base)).unwrap();
+    let cfg = Arc::new(AppConfig::load_path(&cfg_path).unwrap());
+    let app = create_app(cfg).unwrap();
+
+    tokio::spawn(async move {
+        axum::serve(
+            listener,
+            app.into_make_service_with_connect_info::<SocketAddr>(),
+        )
+        .await
+        .expect("server");
+    });
+
+    tokio::time::sleep(Duration::from_millis(80)).await;
+
+    let client = reqwest::Client::builder()
+        .timeout(Duration::from_secs(120))
+        .build()
+        .unwrap();
+
+    const SIZE: usize = 3 * 1024 * 1024;
+    let upload_body: Vec<u8> = (0..SIZE).map(|i| (i % 251) as u8).collect();
+    let file_part = reqwest::multipart::Part::bytes(upload_body.clone())
+        .file_name("big.bin")
+        .mime_str("application/octet-stream")
+        .unwrap();
+    let form = reqwest::multipart::Form::new()
+        .text("time", "hour")
+        .part("file", file_part);
+
+    let res = client
+        .post(format!("{base}upload"))
+        .multipart(form)
+        .send()
+        .await
+        .expect("upload request");
+    assert!(res.status().is_success(), "upload status {}", res.status());
+    let html = res.text().await.expect("upload body");
+
+    let re = Regex::new(r"f/([A-Za-z0-9_-]+)\?d=1").unwrap();
+    let link_id = re
+        .captures(&html)
+        .and_then(|c| c.get(1).map(|m| m.as_str().to_string()))
+        .expect("link id in upload result");
+
+    let dl_url = format!("{base}f/{link_id}?d=1");
+    let dl = client.get(&dl_url).send().await.expect("download");
+    assert!(dl.status().is_success(), "download {}", dl.status());
+    assert_eq!(dl.bytes().await.unwrap().as_ref(), upload_body.as_slice());
+}
+
 #[tokio::test]
 async fn upload_complete_get_without_token_hides_delete_link() {
     let tmp = TempDir::new().unwrap();

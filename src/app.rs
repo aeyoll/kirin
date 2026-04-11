@@ -45,6 +45,14 @@ pub fn create_app(cfg: Arc<AppConfig>) -> anyhow::Result<Router> {
         (cfg.server.max_body_mb as usize).saturating_mul(1024 * 1024)
     };
 
+    // `Multipart` uses `DefaultBodyLimit` (Axum default 2 MiB). `RequestBodyLimitLayer` alone does not
+    // raise that cap, so large uploads were cut off mid-body unless this matches `max_body_mb`.
+    let default_body_limit = if cfg.server.max_body_mb == 0 {
+        DefaultBodyLimit::disable()
+    } else {
+        DefaultBodyLimit::max(max_bytes)
+    };
+
     let router = Router::new()
         .route("/", get(index_get))
         .route("/locale", post(locale_post))
@@ -69,6 +77,7 @@ pub fn create_app(cfg: Arc<AppConfig>) -> anyhow::Result<Router> {
         .layer(CookieManagerLayer::new())
         .layer(CompressionLayer::new())
         .layer(TraceLayer::new_for_http())
+        .layer(default_body_limit)
         .layer(RequestBodyLimitLayer::new(max_bytes))
         .with_state(state);
 
