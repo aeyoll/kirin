@@ -49,5 +49,5 @@ session_signing_key_hex = "0123456789abcdef0123456789abcdef0123456789abcdef01234
 allowed_admin_ips = []
 
 [ui]
-title = "Jirafeau-rust"
+title = "Kirin"
 organisation = ""

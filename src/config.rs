@@ -164,7 +164,7 @@ pub struct UiSection {
 }
 
 fn default_title() -> String {
-    "Jirafeau-rust".into()
+    "Kirin".into()
 }
 
 impl Default for UiSection {
