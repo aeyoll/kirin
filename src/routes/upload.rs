@@ -223,6 +223,16 @@ pub async fn process_multipart(
         }
         link_id = gen_link_id(link_len);
     }
+    if state
+        .storage
+        .read_meta(&link_id)
+        .await
+        .map_err(|_| AppError::Internal)?
+        .is_some()
+    {
+        let _ = tokio::fs::remove_file(&tmp_path).await;
+        return Err(AppError::Conflict);
+    }
 
     let pw_hash = if key_plain.is_empty() {
         None
