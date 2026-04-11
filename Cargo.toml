@@ -1,6 +1,52 @@
 [package]
 name = "kirin"
 version = "0.1.0"
-edition = "2024"
+edition = "2021"
+description = "Rust reimplementation of Jirafeau-style ephemeral file sharing"
+license = "AGPL-3.0-or-later"
+readme = "README.md"
 
 [dependencies]
+anyhow = "1.0.95"
+argon2 = { version = "0.5.3", features = ["std"] }
+async-trait = "0.1.85"
+axum = { version = "0.8.1", features = ["macros", "multipart"] }
+axum-extra = { version = "0.10.0", features = ["cookie", "typed-header"] }
+base64 = "0.22.1"
+blake3 = "1.5.5"
+bytes = "1.9.0"
+chrono = { version = "0.4.39", features = ["serde"] }
+cookie = "0.18.1"
+futures-util = "0.3.31"
+headers = "0.4.0"
+hex = "0.4.3"
+hmac = "0.12.1"
+http-body-util = "0.1.2"
+ipnet = "2.10.1"
+mime_guess = "2.0.5"
+minijinja = { version = "2.6.0", features = ["loader", "builtins", "serde"] }
+rand = "0.8.5"
+sanitize-filename = "0.5.0"
+serde = { version = "1.0.217", features = ["derive"] }
+serde_json = "1.0.138"
+sha2 = "0.10.8"
+subtle = "2.6.1"
+thiserror = "2.0.11"
+tokio = { version = "1.43.0", features = ["fs", "io-util", "macros", "net", "rt-multi-thread", "signal", "sync"] }
+tokio-util = { version = "0.7.13", features = ["io"] }
+toml = "0.8.19"
+tower = "0.5.2"
+tower-cookies = "0.11.0"
+tower-http = { version = "0.6.2", features = ["compression-full", "fs", "limit", "trace"] }
+tracing = "0.1.41"
+tracing-subscriber = { version = "0.3.19", features = ["env-filter"] }
+uuid = { version = "1.12.1", features = ["v4"] }
+walkdir = "2.5.0"
+
+[dev-dependencies]
+http-body-util = "0.1.2"
+hyper = "1.5.2"
+regex = "1.11.1"
+reqwest = { version = "0.12.12", default-features = false, features = ["multipart", "rustls-tls"] }
+tempfile = "3.15.0"
+tower = { version = "0.5.2", features = ["util"] }

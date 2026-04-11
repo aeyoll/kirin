@@ -1,0 +1,53 @@
+# Copy to config.toml and adjust.
+
+[server]
+bind = "127.0.0.1:8080"
+# Root URL for generated links (trailing slash optional)
+public_base_url = "http://127.0.0.1:8080/"
+data_dir = "./data"
+max_body_mb = 512
+# Chunk ceiling for browser uploads (similar role to PHP max_upload_chunk_size_bytes)
+max_upload_chunk_bytes = 5_000_000
+
+[limits]
+# 0 = unlimited (Jirafeau uses MB; we use bytes for precision)
+max_upload_bytes = 0
+link_id_length = 8
+
+[upload_auth]
+# Empty list = no upload password required (still subject to IP rules if set)
+passwords = []
+# CIDR or plain IPv4 strings; empty = any IP
+allowed_ips = []
+# IPs that may upload without password when passwords are configured
+allowed_ips_without_password = []
+
+[availabilities]
+minute = true
+hour = true
+day = true
+week = true
+fortnight = true
+month = true
+quarter = false
+year = false
+none = false
+default = "month"
+
+[features]
+one_time_download = true
+one_time_download_preselected = false
+preview = true
+# optional | required | generated (generated not implemented; treated as optional)
+download_password_requirement = "optional"
+
+[admin]
+# 64-char hex = echo -n 'yourpassword' | sha256sum (Jirafeau style). Empty disables admin UI.
+password_sha256_hex = ""
+# 64 hex chars (32 bytes) used to sign admin session cookies; generate with openssl rand -hex 32
+session_signing_key_hex = "0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef"
+allowed_admin_ips = []
+
+[ui]
+title = "Jirafeau-rust"
+organisation = ""

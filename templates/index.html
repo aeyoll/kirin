@@ -1,0 +1,60 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>{{ title }}</title>
+  <link rel="stylesheet" href="/static/style.css" />
+</head>
+<body>
+  <a class="skip-link" href="#main">Skip to main content</a>
+  <header>
+    <h1>{{ title }}</h1>
+    {% if organisation %}<p>{{ organisation }}</p>{% endif %}
+  </header>
+  <main id="main">
+    {% if upload_error %}
+    <div role="alert">{{ upload_error }}</div>
+    {% endif %}
+    <section aria-labelledby="upload-heading">
+      <h2 id="upload-heading">Upload a file</h2>
+      <form method="post" action="/upload" enctype="multipart/form-data" id="upload-form" novalidate>
+        <p>
+          <label for="file">File</label>
+          <input type="file" name="file" id="file" required />
+        </p>
+        <p>
+          <label for="time">Expires after</label>
+          <select name="time" id="time">
+            {% for opt in availability_options %}
+            <option value="{{ opt.key }}"{% if opt.key == default_availability %} selected{% endif %}>{{ opt.label }}</option>
+            {% endfor %}
+          </select>
+        </p>
+        {% if one_time_enabled %}
+        <p>
+          <input type="checkbox" name="one_time_download" value="1" id="otd" {% if one_time_preselected %}checked{% endif %} />
+          <label for="otd">Delete file after first download</label>
+        </p>
+        {% endif %}
+        {% if download_password_optional %}
+        <p>
+          <label for="key">Download password (optional)</label>
+          <input type="password" name="key" id="key" autocomplete="new-password" />
+        </p>
+        {% endif %}
+        {% if show_upload_password_field %}
+        <p>
+          <label for="upload_password">Upload password</label>
+          <input type="password" name="upload_password" id="upload_password" autocomplete="current-password" />
+        </p>
+        {% endif %}
+        <p><button type="submit">Send</button></p>
+      </form>
+    </section>
+  </main>
+  <footer>
+    <p><a href="/admin">Admin</a></p>
+  </footer>
+</body>
+</html>

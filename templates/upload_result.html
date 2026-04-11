@@ -1,0 +1,20 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <title>Upload complete</title>
+  <link rel="stylesheet" href="/static/style.css" />
+</head>
+<body>
+  <main>
+    <h1>Upload complete</h1>
+    <p>Your file: <strong>{{ original_name }}</strong></p>
+    <ul>
+      <li><a href="{{ download_page|safe }}">Download page</a> — <span>{{ download_page|safe }}</span></li>
+      <li><a href="{{ direct_download|safe }}">Direct download</a> — <span>{{ direct_download|safe }}</span></li>
+      <li><a href="{{ delete_link|safe }}">Delete link</a> — <span>{{ delete_link|safe }}</span></li>
+    </ul>
+    <p><a href="/">Upload another file</a></p>
+  </main>
+</body>
+</html>

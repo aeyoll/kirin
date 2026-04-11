@@ -1,0 +1,34 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>{{ title }}</title>
+  <link rel="stylesheet" href="/static/style.css" />
+</head>
+<body>
+  <a class="skip-link" href="#main">Skip to main content</a>
+  <main id="main">
+    {% if need_password %}
+    <form method="post" action="/f/{{ link_id }}?d=1" id="pw-form" enctype="multipart/form-data">
+      <h1>Password required</h1>
+      <p>This file is protected. Enter the download password.</p>
+      <p>
+        <label for="key">Password</label>
+        <input type="password" name="key" id="key" autocomplete="current-password" required />
+      </p>
+      {% if one_time %}<p>This file will be deleted after the first successful download.</p>{% endif %}
+      <p><button type="submit">Download</button></p>
+    </form>
+    {% else %}
+    <h1>{{ original_name }}</h1>
+    <p>Size: {{ size_human }}</p>
+    {% if one_time %}<p>This file will be deleted after the first successful download.</p>{% endif %}
+    <p><a href="/f/{{ link_id }}?d=1">Download</a></p>
+    {% if preview %}
+    <p><a href="/f/{{ link_id }}?p=1">Preview</a></p>
+    {% endif %}
+    {% endif %}
+  </main>
+</body>
+</html>
