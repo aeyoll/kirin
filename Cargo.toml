@@ -3,7 +3,7 @@ name = "kirin"
 version = "0.1.1"
 edition = "2021"
 description = "Rust reimplementation of Jirafeau-style ephemeral file sharing"
-license = "AGPL-3.0-or-later"
+license = "MIT"
 readme = "README.md"
 
 [build-dependencies]
