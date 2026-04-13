@@ -4,17 +4,36 @@ Rust service modeled after [Jirafeau](https://gitlab.com/jirafeau/Jirafeau).
 
 ## Run
 
-Copy `config.example.toml` to `config.toml`, then:
+Copy `config.example.toml` to `config.toml` in the project directory (or install your config under XDG; see below), then:
 
 ```bash
-cargo run --release -- config.toml
+cargo run --release
+```
+
+You can pass an explicit path as the first argument:
+
+```bash
+cargo run --release -- /path/to/config.toml
 ```
 
 Set `RUST_LOG=kirin=debug,tower_http=debug` for request logging.
 
 ## Configuration
 
-All settings live in one TOML file. The authoritative annotated example is `config.example.toml`. Notable sections:
+All settings live in one TOML file. The authoritative annotated example is `config.example.toml`.
+
+### Config file location
+
+Kirin picks the TOML path in this order:
+
+1. **First CLI argument** (non-empty), if given.
+2. **`KIRIN_CONFIG`** environment variable, if set and non-empty.
+3. **`./config.toml`** in the current working directory, if that file exists.
+4. **XDG config directory**: `$XDG_CONFIG_HOME/kirin/config.toml`. If `XDG_CONFIG_HOME` is unset or empty, `$HOME/.config/kirin/config.toml` is used. If `HOME` is unset, the fallback is `.config/kirin/config.toml` relative to the current working directory.
+
+So a system-wide or per-user install can use `~/.config/kirin/config.toml` without passing a path, as long as you do not have a `config.toml` in the directory you start the process from.
+
+Notable sections:
 
 - `server`: listen address, `public_base_url` (used in generated links; trailing slash optional), `data_dir`, `max_body_mb`, optional `max_upload_chunk_bytes` for async chunk uploads.
 - `limits`: `max_upload_bytes` (0 = unlimited) and `link_id_length` (clamped between 4 and 32).
@@ -38,7 +57,7 @@ Build an image from the repository root (this crate):
 docker build -t aeyoll/kirin:latest -f Dockerfile .
 ```
 
-Run with a mounted config and persistent data directory:
+Run with a mounted config and persistent data directory. The default image command passes `/etc/kirin/config.toml`; you can instead set `KIRIN_CONFIG` to another path and adjust the `CMD` or entrypoint if needed.
 
 ```bash
 docker run --rm -p 8080:8080 \
