@@ -2,6 +2,43 @@ use serde::Deserialize;
 use std::net::SocketAddr;
 use std::path::PathBuf;
 
+/// Environment variable that sets the configuration file path (absolute or relative).
+pub const KIRIN_CONFIG_ENV: &str = "KIRIN_CONFIG";
+
+/// Resolves the path to `config.toml` using, in order: a non-empty CLI argument,
+/// a non-empty [`KIRIN_CONFIG_ENV`] value, `./config.toml` when that file exists,
+/// otherwise [`xdg_config_dir`]`/kirin/config.toml` (XDG Base Directory).
+pub fn resolve_config_path(cli_arg: Option<String>) -> PathBuf {
+    if let Some(p) = cli_arg.filter(|s| !s.is_empty()) {
+        return PathBuf::from(p);
+    }
+    if let Ok(p) = std::env::var(KIRIN_CONFIG_ENV) {
+        if !p.is_empty() {
+            return PathBuf::from(p);
+        }
+    }
+    let cwd_config = PathBuf::from("config.toml");
+    if cwd_config.is_file() {
+        return cwd_config;
+    }
+    xdg_config_dir().join("kirin").join("config.toml")
+}
+
+/// User configuration directory per the XDG Base Directory Specification.
+///
+/// Uses `XDG_CONFIG_HOME` when set and non-empty; otherwise `$HOME/.config`.
+/// If `HOME` is unset, falls back to `.config` under the current directory.
+pub fn xdg_config_dir() -> PathBuf {
+    std::env::var_os("XDG_CONFIG_HOME")
+        .filter(|v| !v.is_empty())
+        .map(PathBuf::from)
+        .unwrap_or_else(|| {
+            std::env::var_os("HOME")
+                .map(|h| PathBuf::from(h).join(".config"))
+                .unwrap_or_else(|| PathBuf::from(".config"))
+        })
+}
+
 #[derive(Debug, Clone, Deserialize)]
 pub struct AppConfig {
     pub server: ServerSection,
@@ -275,6 +312,66 @@ impl AppConfig {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use std::sync::Mutex;
+
+    static ENV_LOCK: Mutex<()> = Mutex::new(());
+
+    #[test]
+    fn resolve_config_path_uses_cli_when_present() {
+        assert_eq!(
+            resolve_config_path(Some("/tmp/explicit.toml".into())),
+            PathBuf::from("/tmp/explicit.toml")
+        );
+    }
+
+    #[test]
+    fn resolve_config_path_uses_kirin_config_env() {
+        let _guard = ENV_LOCK.lock().unwrap();
+        let prev = std::env::var_os(KIRIN_CONFIG_ENV);
+        std::env::set_var(KIRIN_CONFIG_ENV, "/tmp/from-env.toml");
+        assert_eq!(
+            resolve_config_path(None),
+            PathBuf::from("/tmp/from-env.toml")
+        );
+        match prev {
+            Some(v) => std::env::set_var(KIRIN_CONFIG_ENV, v),
+            None => std::env::remove_var(KIRIN_CONFIG_ENV),
+        }
+    }
+
+    #[test]
+    fn xdg_config_dir_respects_xdg_config_home() {
+        let _guard = ENV_LOCK.lock().unwrap();
+        let prev = std::env::var_os("XDG_CONFIG_HOME");
+        let tmp = tempfile::tempdir().unwrap();
+        let custom = tmp.path().join("xdg-cfg");
+        std::fs::create_dir_all(&custom).unwrap();
+        std::env::set_var("XDG_CONFIG_HOME", &custom);
+        assert_eq!(xdg_config_dir(), custom);
+        match prev {
+            Some(v) => std::env::set_var("XDG_CONFIG_HOME", v),
+            None => std::env::remove_var("XDG_CONFIG_HOME"),
+        }
+    }
+
+    #[test]
+    fn xdg_config_dir_defaults_to_home_dot_config() {
+        let _guard = ENV_LOCK.lock().unwrap();
+        let prev_xdg = std::env::var_os("XDG_CONFIG_HOME");
+        let prev_home = std::env::var_os("HOME");
+        std::env::remove_var("XDG_CONFIG_HOME");
+        let tmp = tempfile::tempdir().unwrap();
+        std::env::set_var("HOME", tmp.path());
+        assert_eq!(xdg_config_dir(), tmp.path().join(".config"));
+        match prev_xdg {
+            Some(v) => std::env::set_var("XDG_CONFIG_HOME", v),
+            None => std::env::remove_var("XDG_CONFIG_HOME"),
+        }
+        match prev_home {
+            Some(v) => std::env::set_var("HOME", v),
+            None => std::env::remove_var("HOME"),
+        }
+    }
 
     #[test]
     fn rejects_invalid_default_locale() {
