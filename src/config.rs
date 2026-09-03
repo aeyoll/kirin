@@ -1,6 +1,7 @@
 use serde::Deserialize;
 use std::net::SocketAddr;
 use std::path::PathBuf;
+use argon2::password_hash::phc::PasswordHash;
 
 /// Environment variable that sets the configuration file path (absolute or relative).
 pub const KIRIN_CONFIG_ENV: &str = "KIRIN_CONFIG";
@@ -237,7 +238,7 @@ impl AppConfig {
                 anyhow::bail!("admin.password_sha256_hex too long");
             }
             if admin_pw.starts_with("$argon2") {
-                argon2::password_hash::PasswordHash::new(admin_pw).map_err(|_| {
+                PasswordHash::new(admin_pw).map_err(|_| {
                     anyhow::anyhow!("admin.password_sha256_hex: invalid Argon2 PHC")
                 })?;
             } else if admin_pw.len() == 64 && admin_pw.chars().all(|c| c.is_ascii_hexdigit()) {

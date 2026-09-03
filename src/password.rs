@@ -1,4 +1,5 @@
-use argon2::password_hash::{PasswordHash, PasswordHasher, PasswordVerifier, SaltString};
+use argon2::password_hash::{PasswordHasher, PasswordVerifier};
+use argon2::password_hash::phc::PasswordHash;
 use argon2::Argon2;
 use sha2::{Digest, Sha256};
 
@@ -8,9 +9,8 @@ pub fn sha256_hex(input: &[u8]) -> String {
 }
 
 pub fn hash_download_password(plain: &str) -> anyhow::Result<String> {
-    let salt = SaltString::generate(&mut rand::thread_rng());
     let argon = Argon2::default();
-    Ok(argon.hash_password(plain.as_bytes(), &salt)?.to_string())
+    Ok(argon.hash_password(plain.as_bytes())?.to_string())
 }
 
 pub fn verify_download_password(hash: &str, plain: &str) -> bool {

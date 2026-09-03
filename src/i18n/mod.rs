@@ -1,7 +1,7 @@
 use axum::http::Uri;
 use std::collections::HashMap;
 use std::sync::Arc;
-use toml::Value;
+use toml::{Table, Value};
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum Locale {
@@ -33,9 +33,9 @@ const JA_SRC: &str = include_str!(concat!(env!("CARGO_MANIFEST_DIR"), "/locales/
 
 impl Catalog {
     pub fn embedded() -> anyhow::Result<Arc<Self>> {
-        let en = flatten_toml("", &EN_SRC.parse::<Value>()?)?;
-        let fr = flatten_toml("", &FR_SRC.parse::<Value>()?)?;
-        let ja = flatten_toml("", &JA_SRC.parse::<Value>()?)?;
+        let en = flatten_toml("", &Value::Table(EN_SRC.parse::<Table>()?))?;
+        let fr = flatten_toml("", &Value::Table(FR_SRC.parse::<Table>()?))?;
+        let ja = flatten_toml("", &Value::Table(JA_SRC.parse::<Table>()?))?;
         Ok(Arc::new(Self { en, fr, ja }))
     }
 

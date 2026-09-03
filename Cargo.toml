@@ -8,50 +8,50 @@ readme = "README.md"
 
 [build-dependencies]
 hex = "0.4.3"
-sha2 = "0.10.8"
+sha2 = "0.11.0"
 
 [dependencies]
-anyhow = "1.0.95"
-argon2 = { version = "0.5.3", features = ["std"] }
-async-trait = "0.1.85"
-axum = { version = "0.8.1", features = ["macros", "multipart"] }
-axum-extra = { version = "0.10.0", features = ["cookie", "typed-header"] }
-base64 = "0.22.1"
-blake3 = "1.5.5"
-bytes = "1.9.0"
-chrono = { version = "0.4.39", features = ["serde"] }
-cookie = "0.18.1"
-futures-util = "0.3.31"
-headers = "0.4.0"
+anyhow = "1.0.104"
+argon2 = { version = "0.6.0", features = ["getrandom"] }
+async-trait = "0.1.92"
+axum = { version = "0.8.9", features = ["macros", "multipart"] }
+axum-extra = { version = "0.12.6", features = ["cookie", "typed-header"] }
+base64 = "0.23.1"
+blake3 = "1.8.7"
+bytes = "1.12.1"
+chrono = { version = "0.4.45", features = ["serde"] }
+cookie = "0.18.2"
+futures-util = "0.3.34"
+headers = "0.4.1"
 hex = "0.4.3"
-hmac = "0.12.1"
-http-body-util = "0.1.2"
-ipnet = "2.10.1"
+hmac = "0.13.0"
+http-body-util = "0.1.5"
+ipnet = "2.12.1"
 mime_guess = "2.0.5"
-minijinja = { version = "2.6.0", features = ["loader", "builtins", "serde"] }
-rand = "0.8.5"
-rust-embed = "8.5.0"
-sanitize-filename = "0.5.0"
-serde = { version = "1.0.217", features = ["derive"] }
-serde_json = "1.0.138"
-sha2 = "0.10.8"
+minijinja = { version = "2.24.0", features = ["loader", "builtins", "serde"] }
+rand = { version = "0.10.2", features = ["thread_rng"] }
+rust-embed = "8.12.0"
+sanitize-filename = "0.6.0"
+serde = { version = "1.0.229", features = ["derive"] }
+serde_json = "1.0.151"
+sha2 = "0.11.0"
 subtle = "2.6.1"
-thiserror = "2.0.11"
-tokio = { version = "1.43.0", features = ["fs", "io-util", "macros", "net", "rt-multi-thread", "signal", "sync"] }
-tokio-util = { version = "0.7.13", features = ["io"] }
-toml = "0.8.19"
-tower = "0.5.2"
+thiserror = "2.0.20"
+tokio = { version = "1.53.1", features = ["fs", "io-util", "macros", "net", "rt-multi-thread", "signal", "sync"] }
+tokio-util = { version = "0.7.19", features = ["io"] }
+toml = "1.1.5"
+tower = "0.5.3"
 tower-cookies = "0.11.0"
-tower-http = { version = "0.6.2", features = ["compression-full", "limit", "trace"] }
-tracing = "0.1.41"
-tracing-subscriber = { version = "0.3.19", features = ["env-filter"] }
-uuid = { version = "1.12.1", features = ["v4"] }
+tower-http = { version = "0.7.1", features = ["compression-full", "limit", "trace"] }
+tracing = "0.1.44"
+tracing-subscriber = { version = "0.3.23", features = ["env-filter"] }
+uuid = { version = "1.26.0", features = ["v4"] }
 walkdir = "2.5.0"
 
 [dev-dependencies]
-http-body-util = "0.1.2"
-hyper = "1.5.2"
-regex = "1.11.1"
-reqwest = { version = "0.12.12", default-features = false, features = ["multipart", "rustls-tls"] }
-tempfile = "3.15.0"
-tower = { version = "0.5.2", features = ["util"] }
+http-body-util = "0.1.5"
+hyper = "1.11.1"
+regex = "1.13.1"
+reqwest = "0.13.4"
+tempfile = "3.27.0"
+tower = { version = "0.5.3", features = ["util"] }

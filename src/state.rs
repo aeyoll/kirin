@@ -3,7 +3,7 @@ use crate::i18n::Catalog;
 use crate::models::AsyncUploadSession;
 use crate::storage::DynStorage;
 use crate::templates::TemplateEngine;
-use hmac::{Hmac, Mac};
+use hmac::{Hmac, KeyInit, Mac};
 use minijinja::Environment;
 use sha2::Sha256;
 use std::collections::HashMap;

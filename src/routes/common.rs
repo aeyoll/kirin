@@ -1,4 +1,4 @@
-use rand::Rng;
+use rand::RngExt;
 
 pub fn valid_link_id(id: &str) -> bool {
     !id.is_empty()
@@ -9,9 +9,9 @@ pub fn valid_link_id(id: &str) -> bool {
 
 pub fn gen_link_id(len: usize) -> String {
     const CHARSET: &[u8] = b"abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789-_";
-    let mut rng = rand::thread_rng();
+    let mut rng = rand::rng();
     (0..len)
-        .map(|_| CHARSET[rng.gen_range(0..CHARSET.len())] as char)
+        .map(|_| CHARSET[rng.random_range(0..CHARSET.len())] as char)
         .collect()
 }
 
