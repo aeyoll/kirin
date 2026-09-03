@@ -9,7 +9,7 @@
 <div class="mb-6 rounded-lg border border-red-200 bg-red-50 px-4 py-3 text-red-800 dark:border-red-900/50 dark:bg-red-950/40 dark:text-red-200" role="alert">{{ upload_error }}</div>
 {% endif %}
 <div id="upload-async-error" class="mb-6 hidden rounded-lg border border-red-200 bg-red-50 px-4 py-3 text-red-800 dark:border-red-900/50 dark:bg-red-950/40 dark:text-red-200" role="alert" aria-live="polite" tabindex="-1"></div>
-<section class="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm dark:border-slate-800 dark:bg-slate-900/50 dark:shadow-none" aria-labelledby="upload-heading">
+<section class="rounded-2xl border border-slate-200 bg-white p-6 shadow-xs dark:border-slate-800 dark:bg-slate-900/50 dark:shadow-none" aria-labelledby="upload-heading">
   <h2 id="upload-heading" class="text-lg font-medium text-slate-900 dark:text-white">{{ tr["index.upload_heading"] }}</h2>
   <p class="mt-1 text-sm text-slate-600 dark:text-slate-400">{{ tr["index.upload_lead"] }}</p>
   <form
@@ -42,7 +42,7 @@
       <select
         name="time"
         id="time"
-        class="block w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-slate-900 shadow-sm focus:border-indigo-500 focus:outline-none focus:ring-2 focus:ring-indigo-500 dark:border-slate-600 dark:bg-slate-800 dark:text-slate-100 dark:focus:border-indigo-400 dark:focus:ring-indigo-400"
+        class="block w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-slate-900 shadow-xs focus:border-indigo-500 focus:outline-hidden focus:ring-2 focus:ring-indigo-500 dark:border-slate-600 dark:bg-slate-800 dark:text-slate-100 dark:focus:border-indigo-400 dark:focus:ring-indigo-400"
       >
         {% for opt in availability_options %}
         <option value="{{ opt.key }}"{% if opt.key == default_availability %} selected{% endif %}>{{ opt.label }}</option>
@@ -56,7 +56,7 @@
         name="one_time_download"
         value="1"
         id="otd"
-        class="mt-1 h-4 w-4 rounded border-slate-300 text-indigo-600 focus:ring-indigo-500 dark:border-slate-600 dark:bg-slate-800 dark:focus:ring-indigo-400"
+        class="mt-1 h-4 w-4 rounded-sm border-slate-300 text-indigo-600 focus:ring-indigo-500 dark:border-slate-600 dark:bg-slate-800 dark:focus:ring-indigo-400"
         {% if one_time_preselected %}checked{% endif %}
       />
       <div>
@@ -73,7 +73,7 @@
         name="key"
         id="key"
         autocomplete="new-password"
-        class="block w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-slate-900 shadow-sm focus:border-indigo-500 focus:outline-none focus:ring-2 focus:ring-indigo-500 dark:border-slate-600 dark:bg-slate-800 dark:text-slate-100 dark:focus:border-indigo-400 dark:focus:ring-indigo-400"
+        class="block w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-slate-900 shadow-xs focus:border-indigo-500 focus:outline-hidden focus:ring-2 focus:ring-indigo-500 dark:border-slate-600 dark:bg-slate-800 dark:text-slate-100 dark:focus:border-indigo-400 dark:focus:ring-indigo-400"
       />
     </div>
     {% endif %}
@@ -85,7 +85,7 @@
         name="upload_password"
         id="upload_password"
         autocomplete="current-password"
-        class="block w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-slate-900 shadow-sm focus:border-indigo-500 focus:outline-none focus:ring-2 focus:ring-indigo-500 dark:border-slate-600 dark:bg-slate-800 dark:text-slate-100 dark:focus:border-indigo-400 dark:focus:ring-indigo-400"
+        class="block w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-slate-900 shadow-xs focus:border-indigo-500 focus:outline-hidden focus:ring-2 focus:ring-indigo-500 dark:border-slate-600 dark:bg-slate-800 dark:text-slate-100 dark:focus:border-indigo-400 dark:focus:ring-indigo-400"
       />
     </div>
     {% endif %}
@@ -93,7 +93,7 @@
       <button
         type="submit"
         id="upload-submit"
-        class="inline-flex items-center justify-center rounded-lg bg-indigo-600 px-5 py-2.5 text-sm font-semibold text-white shadow-sm transition hover:bg-indigo-500 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2 dark:bg-indigo-500 dark:hover:bg-indigo-400 dark:focus:ring-offset-slate-950"
+        class="inline-flex items-center justify-center rounded-lg bg-indigo-600 px-5 py-2.5 text-sm font-semibold text-white shadow-xs transition hover:bg-indigo-500 focus:outline-hidden focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2 dark:bg-indigo-500 dark:hover:bg-indigo-400 dark:focus:ring-offset-slate-950"
       >{{ tr["index.send_file"] }}</button>
     </div>
     <div id="upload-progress" class="hidden space-y-2 pt-4" aria-hidden="true">

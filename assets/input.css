@@ -1,17 +1,35 @@
-@tailwind base;
-@tailwind components;
-@tailwind utilities;
+@import 'tailwindcss';
 
-@layer components {
-  .upload-progress-meter::-webkit-progress-bar {
+@custom-variant dark (&:is(.dark *));
+
+/*
+  The default border color has changed to `currentcolor` in Tailwind CSS v4,
+  so we've added these compatibility styles to make sure everything still
+  looks the same as it did with Tailwind CSS v3.
+
+  If we ever want to remove these styles, we need to add an explicit border
+  color utility to any element that depends on these defaults.
+*/
+@layer base {
+  *,
+  ::after,
+  ::before,
+  ::backdrop,
+  ::file-selector-button {
+    border-color: var(--color-gray-200, currentcolor);
+  }
+}
+
+@utility upload-progress-meter {
+  &::-webkit-progress-bar {
     @apply rounded-full bg-slate-200 dark:bg-slate-700;
   }
 
-  .upload-progress-meter::-webkit-progress-value {
+  &::-webkit-progress-value {
     @apply rounded-full bg-indigo-600 dark:bg-indigo-500;
   }
 
-  .upload-progress-meter::-moz-progress-bar {
+  &::-moz-progress-bar {
     @apply rounded-full bg-indigo-600 dark:bg-indigo-500;
   }
 }
